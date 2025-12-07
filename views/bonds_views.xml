@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- =========================================================
+         FORM VIEW: Aval
+         Modelo: sid_bonds.orders
+         ========================================================= -->
+    <record id="view_bond_order_form" model="ir.ui.view">
+        <field name="name">Aval</field>
+        <field name="model">sid_bonds.orders</field>
+        <field name="priority">16</field>
+        <field name="arch" type="xml">
+            <form string="Aval">
+                <header>
+                    <field name="state" widget="statusbar" options="{'clickable': '1', 'fold_field': 'fold'}"/>
+                </header>
+
+                <sheet>
+                    <!-- Botonera -->
+                    <div class="oe_button_box" name="button_box">
+                        <!-- Reemplaza module.action_open_related_orders por tu xmlid real -->
+                        <button class="oe_stat_button"
+                                type="action"
+                                name="%(sid_bonds.action_open_related_orders)d"
+                                icon="fa-tags"
+                                attrs="{'invisible': [('order_ids', '=', False)]}">
+                            <div class="o_stat_info">
+                                <field name="base_pedidos" widget="statinfo" nolabel="1"/>
+                                <span class="o_stat_text">Pedidos</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Ribbon de estado -->
+                    <div>
+                        <widget name="web_ribbon"
+                                title="Cancelado"
+                                bg_color="bg-success"
+                                attrs="{'invisible': [('state', '!=', 'canceled')]}"/>
+                    </div>
+
+                    <!-- Cabeceras secciones -->
+                    <group>
+                        <group>
+                            <label for="aval_type" string="Detalles del Aval"
+                                   class="o_form_label"
+                                   style="font-size: 14px; text-decoration: underline; font-weight: bold; margin-bottom: 10px;"/>
+                        </group>
+                        <group>
+                            <label for="journal_id" string="Datos Banco"
+                                   class="o_form_label"
+                                   style="font-size: 14px; text-decoration: underline; font-weight: bold;"/>
+                        </group>
+                    </group>
+
+
+      <!--                  </group>
+    <group>
+    <group>
+     <field name="x_tipo" string="Tipo" width="100px"/>
+     <field name="x_name" string="Referencia Aval" width="100px"/>
+     <field name="x_create" string="Fecha de emisión"/>
+     <field name="x_date" string="Fecha de vencimiento"/>
+     <field name="x_pedidos" options="{'no_open': False, 'no_create': False}" widget="many2many_tags"/>
+     <field name="x_origen" attrs="{'readonly': [('x_base_imponible', '&gt;', 0)]}"/>
+    </group>
+    <group>
+       <field name="x_cliente" options="{'no_open': True, 'no_create': True}" domain="[('is_company', '=', True)]"/>
+       <field name="x_banco" options="{'clickable': '1','no_open': False, 'no_create': True}" domain="[('code', 'ilike', 'BNK')]"/>
+       <field name="x_importe" options="{'widget': 'monetary', 'currency_field': 'x_currency_id'}"/>
+       <field name="x_currency_id" options="{'no_open': True, 'no_create': True}"/>
+       <field name="x_modo"/>
+    </group>
+  </group>
+    <group string="Documento">
+      <field name="x_aval" widget="pdf_viewer"/>
+    </group>
+    </sheet>
+      <div class="oe_chatter">
+        <field name="message_follower_ids"/>
+        <field name="activity_ids"/>
+        <field name="message_ids"/>
+    </div>
+</form>-->
+
+                    <!-- Datos principales -->
+                    <group>
+                        <group>
+                            <field name="aval_type" string="Tipo" width="100px"/>
+                            <field name="reference" string="Referencia Aval" width="100px"/>
+                            <field name="issue_date" string="Fecha de emisión"/>
+                            <field name="due_date" string="Fecha de vencimiento"/>
+                            <field name="order_ids" widget="many2many_tags"
+                                   options="{'no_open': False, 'no_create': False}"/>
+                            <field name="origin_document"
+                                   attrs="{'readonly': [('base_pedidos', '&gt;', 0)]}"/>
+                        </group>
+
+                        <group>
+                            <field name="partner_id"
+                                   string="Cliente"
+                                   domain="[('is_company', '=', True)]"
+                                   options="{'no_open': True, 'no_create': True}"/>
+                            <field name="journal_id"
+                                   string="Banco"
+                                   domain="[('code', 'ilike', 'BNK')]"
+                                   options="{'clickable': '1', 'no_open': False, 'no_create': True}"/>
+                            <field name="amount"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id"
+                                   options="{'no_open': True, 'no_create': True}"/>
+                            <field name="is_digital"/>
+                        </group>
+                    </group>
+
+                    <!-- Documento -->
+                    <group string="Documento">
+                        <field name="pdf_aval" widget="pdf_viewer"/>
+                    </group>
+                </sheet>
+
+                <!-- Chatter -->
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Limitar acceso por grupos, si lo necesitas -->
+    <record id="view_bond_order_form_rule_groups" model="ir.model.data">
+        <field name="model">ir.ui.view</field>
+        <field name="module">module</field>
+        <field name="name">view_bond_order_form</field>
+        <field name="noupdate">1</field>
+    </record>
+
+
+    <!-- =========================================================
+         TREE VIEW: Avales general
+         ========================================================= -->
+    <record id="view_bond_order_tree" model="ir.ui.view">
+        <field name="name">Avales general</field>
+        <field name="model">sid_bonds.orders</field>
+        <field name="priority">16</field>
+        <field name="arch" type="xml">
+            <tree string="Bonds" create="true" delete="true" edit="true">
+                <field name="aval_type"/>
+                <field name="reference"/>
+                <!-- Reemplaza module.action_open_related_orders por tu xmlid real -->
+                <button class="oe_inline"
+                        icon="fa-suitcase"
+                        name="%(sid_bonds.action_open_related_orders)d"
+                        type="action"
+                        help="Pedidos"/>
+                <field name="order_ids" widget="many2many_tags"/>
+                <field name="partner_id"
+                       string="Cliente"
+                       domain="[('is_company', '=', True)]"
+                       options="{'no_open': True, 'no_create': True}"/>
+                <field name="journal_id"
+                       string="Banco"
+                       options="{'no_open': True, 'no_create': True}"/>
+                <field name="issue_date"/>
+                <field name="due_date"/>
+                <field name="due_date" string="Quedan" widget="remaining_days"/>
+                <field name="base_pedidos" string="Pedidos"/>
+                <field name="amount" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- (Opcional) Restringir por grupos como en tu export -->
+    <record id="view_bond_order_tree_groups_sales_manager" model="ir.ui.view">
+        <field name="name">Avales general groups</field>
+        <field name="model">sid_bonds.orders</field>
+        <field name="inherit_id" ref="view_bond_order_tree"/>
+        <field name="priority">17</field>
+        <field name="groups_id"
+               eval="[(4, ref('sales_team.group_sale_manager')),(4, ref('account.group_account_manager'))]"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="decorations-muted"></attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- =========================================================
+         SEARCH VIEW: OV_panel
+         ========================================================= -->
+    <record id="view_bond_order_search" model="ir.ui.view">
+        <field name="name">OV_panel</field>
+        <field name="model">sid_bonds.orders</field>
+        <field name="priority">16</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="aval_type" string="Tipo de Aval"/>
+                <field name="partner_id" string="Cliente"/>
+                <field name="reference" string="Referencia"/>
+                <field name="order_ids" string="Contrato"/>
+                <field name="state" string="Estado"/>
+                <field name="currency_id" string="Moneda"/>
+                <filter string="Pendientes" name="filter_pending" domain="[('state', 'in', ('draft','pending_bank'))]"/>
+                <filter string="Cancelados" name="filter_cancel" domain="[('state','=','canceled')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Cliente" name="grp_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Banco" name="grp_journal" context="{'group_by': 'journal_id'}"/>
+                    <filter string="Estado" name="grp_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+</odoo>

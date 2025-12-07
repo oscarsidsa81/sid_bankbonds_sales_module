@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="base_automation_sid_bonds_on_pdf_create" model="base.automation">
+            <field name="name">Avales - Disparar al crear con PDF</field>
+            <field name="model_id" ref="model_sid_bonds_orders"/>
+            <field name="trigger">on_create</field>
+            <field name="filter_domain">[('pdf_aval', '!=', False)]</field>
+            <field name="action_server_id" ref="ir_actions_server_sid_bonds_pdf_uploaded"/>
+            <field name="active">True</field>
+        </record>
+
+        <record id="ir_actions_server_sid_bonds_pdf_uploaded" model="ir.actions.server">
+            <field name="name">Avales - Disparar al crear con PDF</field>
+            <!-- Modelo sobre el que se ejecuta la acción -->
+            <field name="model_id" ref="model_sid_bonds_orders"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+                 for record in records:
+                    if record.pdf_aval:
+                        document_name = f"{record.order_ids.name} {record.x_origen}"
+                        document_vals = {
+                            'name': record.reference,
+                            'datas': record.pdf_aval,
+                            'res_model': 'sid_bonds.orders',
+                            'res_id': record.id,
+                            'folder_id': env.ref('sid_bonds.folder_avales').id,
+                            'document_description': document_name
+                        }
+
+                        # Buscar un documento existente vinculado a este record.id en el folder_id 745
+                        existing_document = env['documents.document'].search([
+                            ('res_model', '=', 'sid_bonds.orders'),
+                            ('res_id', '=', record.id),
+                            ('folder_id', '=', env.ref('sid_bonds.folder_avales').id)
+                            ], limit=1)
+
+                        if existing_document:
+                            # Si existe, actualizar el documento con los valores nuevos
+                            existing_document.write(document_vals)
+                        else:
+                            # Si no existe, crear un nuevo documento
+                            env['documents.document'].create(document_vals)
+                    ]]></field>
+        </record>
+
+
+        <record id="action_open_related_orders" model="ir.actions.server">
+            <field name="name">OV - Contratos relacionados</field>
+            <!-- Modelo sobre el que se ejecuta la acción -->
+            <field name="model_id" ref="model_sid_bonds_orders"/>
+            <field name="state">code</field>
+            <field name="code"><![CDATA[
+                # Abrir los contratos (sale.quotations) vinculados a los avales seleccionados
+                for record in records:
+                    sale_order_model = env['sale.order']
+
+                    # Buscar los pedidos de venta relacionados
+                    related_orders = sale_order_model.search([
+                        ('quotations_id', 'in', record.order_ids.ids),
+                        ('partner_id', '=', record.partner_id.id)
+                    ])
+
+                    # Retornar una acción para mostrar los pedidos relacionados en una vista de árbol
+                    action = {
+                        'type': 'ir.actions.act_window',
+                        'name': 'Pedidos Relacionados',
+                        'res_model': 'sale.order',
+                        'view_mode': 'tree,form',
+                        'domain': [('id', 'in', related_orders.ids)],
+                        'target': 'current'
+                    }
+                    ]]></field>
+        </record>
+    </data>
+</odoo>
+
+

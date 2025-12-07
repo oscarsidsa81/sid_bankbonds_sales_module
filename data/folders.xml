@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <record id="folder_avales" model="documents.folder">
+      <field name="name">Avales</field>
+      <field name="parent_folder_id" ref="documents.documents_internal_folder"/>
+    </record>
+  </data>
+</odoo>
