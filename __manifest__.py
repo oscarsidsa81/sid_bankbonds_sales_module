@@ -11,7 +11,7 @@
     "data": [
         "data/automation.xml",
         "data/folders.xml",
-        "views/bonds_order_views.xml",
+        "views/bonds_views.xml",
     ],
     'installable' : True,
     'auto_install' : False,
