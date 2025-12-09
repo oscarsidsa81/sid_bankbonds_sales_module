@@ -21,7 +21,7 @@
                         <!-- Reemplaza module.action_open_related_orders por tu xmlid real -->
                         <button class="oe_stat_button"
                                 type="action"
-                                name="%(sid_bonds_orders.action_open_related_orders)d"
+                                name="%(sid_bankbonds_sales_module.action_open_related_orders)d"
                                 icon="fa-tags"
                                 attrs="{'invisible': [('order_ids', '=', False)]}">
                             <div class="o_stat_info">
