@@ -3,7 +3,7 @@
     <data noupdate="1">
         <record id="base_automation_sid_bonds_on_pdf_create" model="base.automation">
             <field name="name">Avales - Disparar al crear con PDF</field>
-            <field name="model_id" ref="model_sid_bonds_orders"/>
+            <field name="model_id" ref="sid_bonds.model_sid_bonds_orders"/>
             <field name="trigger">on_create</field>
             <field name="filter_domain">[('pdf_aval', '!=', False)]</field>
             <field name="action_server_id" ref="ir_actions_server_sid_bonds_pdf_uploaded"/>
@@ -13,7 +13,7 @@
         <record id="ir_actions_server_sid_bonds_pdf_uploaded" model="ir.actions.server">
             <field name="name">Avales - Disparar al crear con PDF</field>
             <!-- Modelo sobre el que se ejecuta la acción -->
-            <field name="model_id" ref="model_sid_bonds_orders"/>
+            <field name="model_id" ref="sid_bonds.model_sid_bonds_orders"/>
             <field name="state">code</field>
             <field name="code"><![CDATA[
                  for record in records:
@@ -48,7 +48,7 @@
         <record id="action_open_related_orders" model="ir.actions.server">
             <field name="name">OV - Contratos relacionados</field>
             <!-- Modelo sobre el que se ejecuta la acción -->
-            <field name="model_id" ref="model_sid_bonds_orders"/>
+            <field name="model_id" ref="sid_bonds.model_sid_bonds_orders"/>
             <field name="state">code</field>
             <field name="code"><![CDATA[
                 # Abrir los contratos (sale.quotations) vinculados a los avales seleccionados
