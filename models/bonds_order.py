@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 
 
 class BondsOrder(models.Model):
-    _name = "sid_bonds.orders"
+    _name = "sid_bonds_orders"
     _description = "Avales"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
