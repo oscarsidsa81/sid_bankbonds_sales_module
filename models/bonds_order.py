@@ -160,7 +160,7 @@ class BondsOrder(models.Model):
         records = super().create(vals_list)
         for rec in records:
             if rec.name == _("New"):
-                rec.name = self.env["ir.sequence"].next_by_code("sid_bonds.orders") or _("New")
+                rec.name = self.env["ir.sequence"].next_by_code("sid_bonds_orders") or _("New")
         return records
 
     def unlink(self):
@@ -174,7 +174,7 @@ class SaleQuotationsBonds(models.Model):
     _inherit = "sale.quotations"
 
     bond_id = fields.Many2one(
-        comodel_name="sid_bonds.orders",
+        comodel_name="sid_bonds_orders",
         string="Aval",
         ondelete="cascade",
         index=True,

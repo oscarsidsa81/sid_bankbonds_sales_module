@@ -10,6 +10,7 @@
     "depends": ["base", "mail", "account", "sale","documents"],  # sale por sale.order; account por account.journal
     "data": [
         "data/automation.xml",
+        "data/folders.xml",
         "views/bonds_order_views.xml",
     ],
     'installable' : True,
