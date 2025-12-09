@@ -9,8 +9,8 @@
     "license": "AGPL-3",
     "depends": ["base", "mail", "account", "sale","documents"],  # sale por sale.order; account por account.journal
     "data": [
-        "data/automation.xml",
         "data/folders.xml",
+        "data/automation.xml",
         "views/bonds_views.xml",
     ],
     'installable' : True,
