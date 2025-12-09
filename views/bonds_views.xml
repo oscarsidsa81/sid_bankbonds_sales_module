@@ -3,11 +3,11 @@
 
     <!-- =========================================================
          FORM VIEW: Aval
-         Modelo: sid_bonds.orders
+         Modelo: sid_bonds_orders
          ========================================================= -->
     <record id="view_bond_order_form" model="ir.ui.view">
         <field name="name">Aval</field>
-        <field name="model">sid_bonds.orders</field>
+        <field name="model">sid_bonds_orders</field>
         <field name="priority">16</field>
         <field name="arch" type="xml">
             <form string="Aval">
@@ -144,7 +144,7 @@
          ========================================================= -->
     <record id="view_bond_order_tree" model="ir.ui.view">
         <field name="name">Avales general</field>
-        <field name="model">sid_bonds.orders</field>
+        <field name="model">sid_bonds_orders</field>
         <field name="priority">16</field>
         <field name="arch" type="xml">
             <tree string="Bonds" create="true" delete="true" edit="true">
@@ -179,7 +179,7 @@
     <!-- (Opcional) Restringir por grupos como en tu export -->
     <record id="view_bond_order_tree_groups_sales_manager" model="ir.ui.view">
         <field name="name">Avales general groups</field>
-        <field name="model">sid_bonds.orders</field>
+        <field name="model">sid_bonds_orders</field>
         <field name="inherit_id" ref="view_bond_order_tree"/>
         <field name="priority">17</field>
         <field name="groups_id"
@@ -196,7 +196,7 @@
          ========================================================= -->
     <record id="view_bond_order_search" model="ir.ui.view">
         <field name="name">OV_panel</field>
-        <field name="model">sid_bonds.orders</field>
+        <field name="model">sid_bonds_orders</field>
         <field name="priority">16</field>
         <field name="arch" type="xml">
             <search>
