@@ -2,33 +2,15 @@
 <odoo>
 
     <!-- =========================================================
-         ACTION: abrir pedidos relacionados (sale.order filtrado por quotations)
-         Nota: tu compute busca sale.order por quotations_id (sale.quotations).
-               Este action abre sale.order filtrando por partner y quotations_id in order_ids.
-         ========================================================= -->
-    <record id="action_open_related_orders" model="ir.actions.act_window">
-        <field name="name">Pedidos</field>
-        <field name="res_model">sale.order</field>
-        <field name="view_mode">tree,form</field>
-        <field name="domain">[('quotations_id','in', active_id and active_id and active_id != False and active_id or
-            [])]
-        </field>
-        <!-- Ojo: el domain anterior es genérico; como necesitamos order_ids y partner_id del aval,
-             lo correcto es usar context y domain con active_id leyendo el registro.
-             En Odoo XML puro no puedes leer campos del active_id directamente.
-             Por eso abajo uso context y en el botón paso un domain completo con eval en la vista (más fiable). -->
-    </record>
-
-    <!-- =========================================================
          FORM VIEW: Aval (sid_bonds_orders)
          ========================================================= -->
     <record id="view_bond_order_form" model="ir.ui.view">
         <field name="name">sid_bonds_orders.form</field>
         <field name="model">sid_bonds_orders</field>
+        <field name="groups_id" eval="[(4, ref('sid_bankbonds_sales_module.group_bonds_manager'))]"/>
         <field name="arch" type="xml">
             <form string="Aval">
                 <header>
-                    <!-- sin fold_field (no existe) -->
                     <field name="state" widget="statusbar" options="{'clickable': true}"/>
                 </header>
 
@@ -36,16 +18,11 @@
 
                     <!-- Botón estadístico: Pedidos -->
                     <div class="oe_button_box" name="button_box">
-                        <!-- Abre sale.order filtrado por partner_id y quotations_id in order_ids -->
                         <button class="oe_stat_button"
                                 type="action"
                                 name="%(sale.action_orders)d"
                                 icon="fa-tags"
                                 attrs="{'invisible': [('order_ids', '=', False)]}"
-                                context="{
-                                    'search_default_partner_id': partner_id,
-                                    'default_partner_id': partner_id
-                                }"
                                 domain="[('quotations_id','in', order_ids), ('partner_id','=', partner_id), ('state','=','sale')]">
                             <div class="o_stat_info">
                                 <field name="base_pedidos" widget="statinfo" nolabel="1"/>
@@ -54,7 +31,7 @@
                         </button>
                     </div>
 
-                    <!-- Ribbon: Cancelado (tu estado es 'cancelled') -->
+                    <!-- Ribbon: Cancelado -->
                     <div>
                         <widget name="web_ribbon"
                                 title="Cancelado"
@@ -62,61 +39,54 @@
                                 attrs="{'invisible': [('state', '!=', 'cancelled')]}"/>
                     </div>
 
-                    <!-- Cabeceras visuales (igual que tu vista actual) -->
+                    <!-- Cabeceras -->
                     <group>
                         <group>
                             <div class="o_form_label"
-                                 style="font-size: 14px; text-decoration: underline; font-weight: bold;">
+                                 style="font-size:14px;font-weight:bold;text-decoration:underline;">
                                 Tipo de aval
                             </div>
                         </group>
                         <group>
                             <div class="o_form_label"
-                                 style="font-size: 14px; text-decoration: underline; font-weight: bold;">
+                                 style="font-size:14px;font-weight:bold;text-decoration:underline;">
                                 Datos Banco
                             </div>
                         </group>
                     </group>
 
-                    <!-- Datos principales -->
+                    <!-- Datos -->
                     <group>
                         <group>
-                            <field name="aval_type" string="Tipo" width="100px"/>
-                            <field name="reference" string="Referencia Aval" width="100px"/>
-                            <field name="issue_date" string="Fecha de emisión"/>
-                            <field name="due_date" string="Fecha de vencimiento"/>
-                            <field name="order_ids" widget="many2many_tags"
-                                   options="{'no_open': false, 'no_create': false}"/>
-                            <!-- origin_document es compute; lo dejo readonly explícito -->
-                            <field name="origin_document" readonly="1"
-                                   attrs="{'readonly': [('base_pedidos', '&gt;', 0)]}"/>
+                            <field name="aval_type"/>
+                            <field name="reference"/>
+                            <field name="issue_date"/>
+                            <field name="due_date"/>
+                            <field name="order_ids" widget="many2many_tags"/>
+                            <field name="origin_document" readonly="1"/>
                         </group>
 
                         <group>
                             <field name="partner_id"
-                                   string="Cliente"
-                                   domain="[('is_company', '=', True)]"
-                                   options="{'no_open': true, 'no_create': true}"/>
+                                   domain="[('is_company','=',True)]"
+                                   options="{'no_open':true,'no_create':true}"/>
                             <field name="journal_id"
-                                   string="Banco"
-                                   domain="[('code', 'ilike', 'BNK')]"
-                                   options="{'no_open': false, 'no_create': true}"/>
+                                   domain="[('code','ilike','BNK')]"/>
                             <field name="amount" widget="monetary"
-                                   options="{'currency_field': 'currency_id'}"/>
-                            <field name="currency_id" options="{'no_open': true, 'no_create': true}"/>
-                            <field name="is_digital" string="Digital"/>
-                            <field name="reviewed" string="Revisado"/>
+                                   options="{'currency_field':'currency_id'}"/>
+                            <field name="currency_id"/>
+                            <field name="is_digital"/>
+                            <field name="reviewed"/>
                         </group>
                     </group>
 
                     <!-- Documento -->
                     <group string="Documento">
-                        <field name="pdf_aval" widget="pdf_viewer"/>
+                        <field name="pdf_aval" widget="binary"/>
                     </group>
 
                 </sheet>
 
-                <!-- Chatter -->
                 <div class="oe_chatter">
                     <field name="message_follower_ids"/>
                     <field name="activity_ids"/>
@@ -127,42 +97,23 @@
     </record>
 
     <!-- =========================================================
-         TREE VIEW: Avales (sid_bonds_orders)
+         TREE VIEW
          ========================================================= -->
     <record id="view_bond_order_tree" model="ir.ui.view">
         <field name="name">sid_bonds_orders.tree</field>
         <field name="model">sid_bonds_orders</field>
+        <field name="groups_id" eval="[(4, ref('sid_bankbonds_sales_module.group_bonds_manager'))]"/>
         <field name="arch" type="xml">
-            <tree string="Bonds" create="true" delete="true" edit="true">
+            <tree string="Avales">
                 <field name="aval_type"/>
                 <field name="reference"/>
-
-                <!-- Botón inline Pedidos: abre sale.order filtrado -->
-                <button class="oe_inline"
-                        icon="fa-suitcase"
-                        name="%(sale.action_orders)d"
-                        type="action"
-                        help="Pedidos"
-                        context="{
-                            'search_default_partner_id': partner_id,
-                            'default_partner_id': partner_id
-                        }"
-                        domain="[('quotations_id','in', order_ids), ('partner_id','=', partner_id), ('state','=','sale')]"/>
-
-                <field name="order_ids" widget="many2many_tags"/>
-                <field name="partner_id"
-                       string="Cliente"
-                       domain="[('is_company', '=', True)]"
-                       options="{'no_open': true, 'no_create': true}"/>
-                <field name="journal_id"
-                       string="Banco"
-                       options="{'no_open': true, 'no_create': true}"/>
+                <field name="partner_id"/>
+                <field name="journal_id"/>
                 <field name="issue_date"/>
                 <field name="due_date"/>
-                <field name="due_date" string="Quedan" widget="remaining_days"/>
-                <field name="base_pedidos" string="Pedidos"/>
+                <field name="base_pedidos"/>
                 <field name="amount" widget="monetary"
-                       options="{'currency_field': 'currency_id'}"/>
+                       options="{'currency_field':'currency_id'}"/>
                 <field name="currency_id"/>
                 <field name="state" widget="badge"/>
             </tree>
@@ -177,43 +128,33 @@
         <field name="model">sid_bonds_orders</field>
         <field name="arch" type="xml">
             <search>
-                <field name="aval_type" string="Tipo de Aval"/>
-                <field name="partner_id" string="Cliente"/>
-                <field name="reference" string="Referencia"/>
-                <field name="order_ids" string="Contrato"/>
-                <field name="state" string="Estado"/>
-                <field name="currency_id" string="Moneda"/>
-
-                <filter string="Pendientes" name="filter_pending"
-                        domain="[('state', 'in', ('draft','pending_bank'))]"/>
-                <filter string="Cancelados" name="filter_cancel"
+                <field name="aval_type"/>
+                <field name="partner_id"/>
+                <field name="reference"/>
+                <field name="state"/>
+                <filter string="Pendientes"
+                        domain="[('state','in',('draft','pending_bank'))]"/>
+                <filter string="Cancelados"
                         domain="[('state','=','cancelled')]"/>
-
-                <group expand="0" string="Agrupar por">
-                    <filter string="Cliente" name="grp_partner" context="{'group_by': 'partner_id'}"/>
-                    <filter string="Banco" name="grp_journal" context="{'group_by': 'journal_id'}"/>
-                    <filter string="Estado" name="grp_state" context="{'group_by': 'state'}"/>
-                </group>
             </search>
         </field>
     </record>
 
     <!-- =========================================================
-         ACTION + MENU (opcional)
+         ACTION + MENU
          ========================================================= -->
     <record id="action_bonds_orders" model="ir.actions.act_window">
         <field name="name">Avales</field>
         <field name="res_model">sid_bonds_orders</field>
         <field name="view_mode">tree,form</field>
-        <field name="search_view_id" ref="view_bond_order_search"/>
-        <field name="groups_id" eval="[(4, ref('sid_bonds_orders.group_bonds_manager'))]"/>
+        <field name="groups_id" eval="[(4, ref('sid_bankbonds_sales_module.group_bonds_manager'))]"/>
     </record>
 
-    <!-- Ajusta el parent según tu módulo -->
     <menuitem id="menu_bonds_orders"
               parent="sale.sale_order_menu"
               name="Avales"
               action="action_bonds_orders"
-              groups="sid_bonds_orders.group_bonds_manager"
+              groups="sid_bankbonds_sales_module.group_bonds_manager"
               sequence="50"/>
+
 </odoo>
