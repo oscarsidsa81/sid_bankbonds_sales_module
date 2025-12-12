@@ -128,14 +128,26 @@
         <field name="model">sid_bonds_orders</field>
         <field name="arch" type="xml">
             <search>
-                <field name="aval_type"/>
-                <field name="partner_id"/>
                 <field name="reference"/>
+                <field name="partner_id"/>
+                <field name="journal_id"/>
+                <field name="aval_type"/>
                 <field name="state"/>
+
                 <filter string="Pendientes"
+                        name="filter_pending"
                         domain="[('state','in',('draft','pending_bank'))]"/>
+
                 <filter string="Cancelados"
+                        name="filter_cancel"
                         domain="[('state','=','cancelled')]"/>
+
+                <group expand="0" string="Agrupar por">
+                    <filter string="Cliente" name="grp_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Banco" name="grp_journal" context="{'group_by': 'journal_id'}"/>
+                    <filter string="Estado" name="grp_state" context="{'group_by': 'state'}"/>
+                    <filter string="Tipo" name="grp_type" context="{'group_by': 'aval_type'}"/>
+                </group>
             </search>
         </field>
     </record>
