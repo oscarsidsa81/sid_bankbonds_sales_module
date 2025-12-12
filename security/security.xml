@@ -2,13 +2,11 @@
 <odoo>
     <data noupdate="1">
 
-        <!-- Categoría opcional (para que el grupo salga ordenado en Ajustes > Usuarios y compañías > Grupos) -->
         <record id="module_category_bonds" model="ir.module.category">
             <field name="name">Avales</field>
             <field name="sequence">30</field>
         </record>
 
-        <!-- Grupo: Gestión de Avales -->
         <record id="group_bonds_manager" model="res.groups">
             <field name="name">Gestión de Avales</field>
             <field name="category_id" ref="sid_bonds_orders.module_category_bonds"/>
