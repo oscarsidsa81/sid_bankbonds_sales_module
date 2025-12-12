@@ -4,7 +4,6 @@
 
         <record id="group_bonds_manager" model="res.groups">
             <field name="name">Gestión de Avales</field>
-            <field name="category_id" ref="sid_bonds_orders.module_category_bonds"/>
         </record>
 
     </data>
