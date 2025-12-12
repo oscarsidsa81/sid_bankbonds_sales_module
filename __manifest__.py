@@ -9,6 +9,8 @@
     "license": "AGPL-3",
     "depends": ["base", "mail", "account", "sale","documents"],  # sale por sale.order; account por account.journal
     "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
         "data/folders.xml",
         "data/automation.xml",
         "views/bonds_views.xml",
