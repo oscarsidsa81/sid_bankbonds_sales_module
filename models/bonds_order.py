@@ -109,6 +109,7 @@ class BondsOrder ( models.Model ) :
     # Con esta computación podemos tener el amount_untaxed de los pedidos confirmados que estén relacionados con el valor de quotations_id
     @api.depends (
         "order_ids",
+        "partner_id",
         "order_ids.sale_order_ids.amount_untaxed",
         "order_ids.sale_order_ids.state",
         "order_ids.sale_order_ids.partner_id",
@@ -189,12 +190,18 @@ class BondsOrder ( models.Model ) :
         return super ().unlink ()
 
 
-class SaleQuotationsBonds ( models.Model ) :
+class SaleQuotationsBonds(models.Model):
     _inherit = "sale.quotations"
 
-    bond_id = fields.Many2one (
+    bond_id = fields.Many2one(
         comodel_name="sid_bonds_orders",
         string="Aval",
         ondelete="cascade",
         index=True,
+    )
+
+    sale_order_ids = fields.One2many(
+        comodel_name="sale.order",
+        inverse_name="quotations_id",
+        string="Pedidos (Sale Orders)",
     )
