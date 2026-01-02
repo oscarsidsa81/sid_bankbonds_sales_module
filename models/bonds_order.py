@@ -9,13 +9,27 @@ class BondsOrder ( models.Model ) :
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
-    def action_view_sale_orders(self):
-        bonds = self.filtered(lambda b: b.partner_id and b.order_ids)
-        if not bonds:
-            return self.env.ref("sale.action_orders").read()[0]
+    def _compute_order_ids(self) :
+        for bond in self :
+            bond.order_ids = bond.contract_ids
 
-        quotation_ids = bonds.mapped("order_ids").ids
-        partner_ids = bonds.mapped("partner_id").ids
+    def _inverse_order_ids(self) :
+        for bond in self :
+            new_quots = bond.order_ids
+            old_quots = bond.contract_ids
+
+            # añadir: las nuevas
+            (new_quots - old_quots).write ( {"bond_id" : bond.id} )
+            # quitar: las que ya no estén
+            (old_quots - new_quots).write ( {"bond_id" : False} )
+
+    def action_view_sale_orders(self) :
+        bonds = self.filtered ( lambda b : b.partner_id and b.contract_ids )
+        if not bonds :
+            return self.env.ref ( "sale.action_orders" ).read ()[0]
+
+        quotation_ids = bonds.mapped ( "contract_ids" ).ids
+        partner_ids = bonds.mapped ( "partner_id" ).ids
 
         domain = [
             ("quotations_id", "in", quotation_ids),
@@ -23,9 +37,9 @@ class BondsOrder ( models.Model ) :
             ("partner_id", "in", partner_ids),
         ]
 
-        action = self.env.ref("sale.action_orders").read()[0]
+        action = self.env.ref ( "sale.action_orders" ).read ()[0]
         action["domain"] = domain
-        action["context"] = dict(self.env.context)
+        action["context"] = dict ( self.env.context )
         return action
 
     name = fields.Char (
@@ -72,11 +86,11 @@ class BondsOrder ( models.Model ) :
     )
 
     order_ids = fields.Many2many (
-        "sale.quotations",
-        "sid_bonds_order_sale_rel",
-        "sid_bonds_orders_id",
-        "sale_quotations_id",
+        comodel_name="sale.quotations",
         string="Pedidos",
+        compute="_compute_order_ids",
+        inverse="_inverse_order_ids",
+        store=False,
     )
 
     base_pedidos = fields.Monetary (
@@ -124,40 +138,25 @@ class BondsOrder ( models.Model ) :
 
     description = fields.Text ( string="Descripción / Notas" )
 
-
     # Con esta computación podemos tener el amount_untaxed de los pedidos confirmados que estén relacionados con el valor de quotations_id
     @api.depends (
-        "order_ids",
+        "contract_ids",
         "partner_id",
-        "order_ids.sale_order_ids.amount_untaxed",
-        "order_ids.sale_order_ids.state",
-        "order_ids.sale_order_ids.partner_id",
+        "contract_ids.sale_order_ids.amount_untaxed",
+        "contract_ids.sale_order_ids.state",
+        "contract_ids.sale_order_ids.partner_id",
     )
-
     def _compute_base_pedidos(self) :
-        for record in self :
-            total = 0.0
-            if not record.order_ids or not record.partner_id :
-                record.base_pedidos = 0.0
+        for bond in self :
+            if not bond.contract_ids or not bond.partner_id :
+                bond.base_pedidos = 0.0
                 continue
 
-            for q in record.order_ids :
-                # 1) Si hay sale.order ligados a la quotation, úsalo
-                so_list = getattr ( q, "sale_order_ids",
-                                    self.env["sale.order"] )
-                if so_list :
-                    so_list = so_list.filtered ( lambda
-                                                     so : so.partner_id.id == record.partner_id.id and so.state != "cancel" )
-                    total += sum ( so_list.mapped ( "amount_untaxed" ) )
-                    continue
-
-                # 2) Si NO hay sale.order, usa la propia quotation (si tiene campos)
-                if hasattr ( q, "amount_untaxed" ) :
-                    total += q.amount_untaxed
-                elif hasattr ( q, "amount_total" ) :
-                    total += q.amount_total
-
-            record.base_pedidos = total
+            orders = bond.contract_ids.mapped ( "sale_order_ids" ).filtered (
+                lambda
+                    so : so.partner_id.id == bond.partner_id.id and so.state == "sale"
+            )
+            bond.base_pedidos = sum ( orders.mapped ( "amount_untaxed" ) )
 
     @api.depends ( "contract_ids", "partner_id" )
     def _compute_documento_origen(self) :
@@ -227,7 +226,7 @@ class SaleQuotationsBonds(models.Model):
     bond_id = fields.Many2one(
         comodel_name="sid_bonds_orders",
         string="Aval",
-        ondelete="cascade",
+        ondelete="set null",
         index=True,
     )
 
