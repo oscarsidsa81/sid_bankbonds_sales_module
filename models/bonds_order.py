@@ -9,6 +9,25 @@ class BondsOrder ( models.Model ) :
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
+    def action_view_sale_orders(self):
+        bonds = self.filtered(lambda b: b.partner_id and b.order_ids)
+        if not bonds:
+            return self.env.ref("sale.action_orders").read()[0]
+
+        quotation_ids = bonds.mapped("order_ids").ids
+        partner_ids = bonds.mapped("partner_id").ids
+
+        domain = [
+            ("quotations_id", "in", quotation_ids),
+            ("state", "!=", "cancel"),
+            ("partner_id", "in", partner_ids),
+        ]
+
+        action = self.env.ref("sale.action_orders").read()[0]
+        action["domain"] = domain
+        action["context"] = dict(self.env.context)
+        return action
+
     name = fields.Char (
         string="Referencia",
         default=lambda self : _ ( "New" ),
