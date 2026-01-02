@@ -141,6 +141,7 @@ class BondsOrder ( models.Model ) :
     # Con esta computación podemos tener el amount_untaxed de los pedidos confirmados que estén relacionados con el valor de quotations_id
     @api.depends (
         "contract_ids",
+        "order_ids"
         "partner_id",
         "contract_ids.sale_order_ids.amount_untaxed",
         "contract_ids.sale_order_ids.state",
