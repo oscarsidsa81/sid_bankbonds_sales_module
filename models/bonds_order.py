@@ -166,6 +166,7 @@ class BondsOrder ( models.Model ) :
                 sale_orders = self.env["sale.order"].search ( [
                     ("quotations_id", "in", record.contract_ids.ids),
                     ("partner_id", "=", record.partner_id.id),
+                    ("state", "=", "sale"),
                 ] )
                 record.origin_document = ", ".join (
                     sale_orders.mapped ( "name" ) )
