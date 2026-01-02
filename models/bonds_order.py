@@ -112,9 +112,9 @@ class BondsOrder ( models.Model ) :
         "partner_id",
         "order_ids.sale_order_ids.amount_untaxed",
         "order_ids.sale_order_ids.state",
-        "order_ids.amount_untaxed",
-        "order_ids.amount_total",
+        "order_ids.sale_order_ids.partner_id",
     )
+
     def _compute_base_pedidos(self) :
         for record in self :
             total = 0.0
