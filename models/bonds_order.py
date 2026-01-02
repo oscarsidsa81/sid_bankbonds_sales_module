@@ -33,7 +33,7 @@ class BondsOrder ( models.Model ) :
 
         domain = [
             ("quotations_id", "in", quotation_ids),
-            ("state", "!=", "cancel"),
+            ("state", "==", "sale"),
             ("partner_id", "in", partner_ids),
         ]
 
