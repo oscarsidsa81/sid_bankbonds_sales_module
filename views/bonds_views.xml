@@ -82,7 +82,7 @@
 
                     <!-- Documento -->
                     <group string="Documento">
-                        <field name="pdf_aval" widget="binary"/>
+                        <field name="pdf_aval" widget="pdf_viewer"/>
                     </group>
 
                 </sheet>
