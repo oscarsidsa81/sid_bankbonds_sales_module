@@ -107,7 +107,7 @@
             <tree string="Avales">
                 <field name="aval_type"/>
                 <field name="reference"/>
-                <button class="oe_inline" icon="fa-suitcase" name="action_view_sale_orders" type="action" help="Pedidos"/>
+                <button class="oe_inline" icon="fa-suitcase" name="action_view_sale_orders" type="object" help="Pedidos"/>
                 <field name="order_ids" widget="many2many_tags"/>
                 <field name="partner_id"/>
                 <field name="journal_id"/>
