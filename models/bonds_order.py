@@ -112,21 +112,33 @@ class BondsOrder ( models.Model ) :
         "partner_id",
         "order_ids.sale_order_ids.amount_untaxed",
         "order_ids.sale_order_ids.state",
-        "order_ids.sale_order_ids.partner_id",
+        "order_ids.amount_untaxed",
+        "order_ids.amount_total",
     )
     def _compute_base_pedidos(self) :
         for record in self :
+            total = 0.0
             if not record.order_ids or not record.partner_id :
                 record.base_pedidos = 0.0
                 continue
 
-            sale_orders = record.order_ids.mapped (
-                "sale_order_ids" ).filtered (
-                lambda
-                    so : so.partner_id.id == record.partner_id.id and so.state == "sale"
-            )
-            record.base_pedidos = sum (
-                sale_orders.mapped ( "amount_untaxed" ) )
+            for q in record.order_ids :
+                # 1) Si hay sale.order ligados a la quotation, úsalo
+                so_list = getattr ( q, "sale_order_ids",
+                                    self.env["sale.order"] )
+                if so_list :
+                    so_list = so_list.filtered ( lambda
+                                                     so : so.partner_id.id == record.partner_id.id and so.state != "cancel" )
+                    total += sum ( so_list.mapped ( "amount_untaxed" ) )
+                    continue
+
+                # 2) Si NO hay sale.order, usa la propia quotation (si tiene campos)
+                if hasattr ( q, "amount_untaxed" ) :
+                    total += q.amount_untaxed
+                elif hasattr ( q, "amount_total" ) :
+                    total += q.amount_total
+
+            record.base_pedidos = total
 
     @api.depends ( "contract_ids", "partner_id" )
     def _compute_documento_origen(self) :
