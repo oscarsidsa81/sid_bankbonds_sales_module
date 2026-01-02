@@ -22,7 +22,8 @@
                                 type="object"
                                 name="action_view_sale_orders"
                                 icon="fa-tags"
-                                attrs="{'invisible': [('quotations_id', '=', False)]}">
+                                attrs="{'invisible': [('order_ids', '=', False)]}"
+                                domain="[('quotations_id','in', order_ids.ids), ('partner_id','=', partner_id), ('state','=','sale')]">
                             <div class="o_stat_info">
                                 <field name="base_pedidos" widget="statinfo" nolabel="1"/>
                                 <span class="o_stat_text">Pedidos</span>
@@ -61,7 +62,7 @@
                             <field name="reference"/>
                             <field name="issue_date"/>
                             <field name="due_date"/>
-                            <field name="quotations_id" widget="many2many_tags"/>
+                            <field name="order_ids" widget="many2many_tags"/>
                             <field name="origin_document" readonly="1"/>
                         </group>
 
