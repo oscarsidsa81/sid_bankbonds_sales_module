@@ -19,7 +19,7 @@ for record in records:
     pedidos_txt = ", ".join(record.contract_ids.mapped("name")) if record.contract_ids else ""
     origen_txt = record.origin_document or ""
     document_name = (pedidos_txt + " " + origen_txt).strip() or (record.reference or record.name or "Aval")
-    name: record.reference or record.name or document_name or "Aval",
+    name = record.reference or record.name or document_name or "Aval",
 
     document_vals = {
         "name": name,
