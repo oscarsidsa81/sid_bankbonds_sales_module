@@ -27,6 +27,7 @@ for record in records:
     document_vals = {
         "name": name_aval,
         "datas": record.pdf_aval,
+        "partner_id": record.partner_id,
         "mimetype": "application/pdf",
         "res_model": "sid_bonds_orders",
         "res_id": record.id,
