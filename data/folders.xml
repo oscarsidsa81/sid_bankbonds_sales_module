@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data noupdate="1">
+  <data noupdate="0">
     <record id="folder_avales" model="documents.folder">
       <field name="name">AVALES</field>
       <field name="parent_folder_id" ref="documents.documents_internal_folder"/>
