@@ -9,6 +9,16 @@ class BondsOrder ( models.Model ) :
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
+    def write(self, vals) :
+        res = super ().write ( vals )
+
+        if "reference" in vals :
+            for rec in self :
+                if rec.reference :
+                    rec.name = rec.reference
+
+        return res
+
     def _compute_order_ids(self) :
         for bond in self :
             bond.order_ids = bond.contract_ids
@@ -45,6 +55,7 @@ class BondsOrder ( models.Model ) :
     name = fields.Char (
         string="Referencia",
         default=lambda self : _ ( "New" ),
+        compute="_compute_name",
         copy=False,
         store=True,
         tracking=True,

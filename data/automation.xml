@@ -49,7 +49,11 @@ for record in records:
         <record id="base_automation_sid_bonds_on_pdf_create" model="base.automation">
             <field name="name">Avales - Disparar al crear con PDF</field>
             <field name="model_id" ref="model_sid_bonds_orders"/>
-            <field name="trigger">on_create</field>
+            <field name="trigger">on_create_or_write</field>
+            <field name="trigger_field_ids" eval="[
+                (4, ref('sid_bankbonds_sales_module.field_sid_bonds_orders__pdf_aval')),
+                (4, ref('sid_bankbonds_sales_module.field_sid_bonds_orders__reference'))
+            ]"/>
             <field name="filter_domain">[('pdf_aval', '!=', False)]</field>
             <field name="action_server_id" ref="ir_actions_server_sid_bonds_pdf_uploaded"/>
             <field name="active">True</field>
