@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
 
         <!-- 1) Acción de servidor -->
         <record id="ir_actions_server_sid_bonds_pdf_uploaded" model="ir.actions.server">
@@ -12,14 +12,17 @@ for record in records:
     if not record.pdf_aval:
         continue
 
-    folder = env.ref('sid_bonds_orders.folder_avales')
+    folder = env.ref('sid_bankbonds_sales_module.folder_avales', raise_if_not_found=False)
+    if not folder:
+        continue
 
-    pedidos_txt = ", ".join(record.order_ids.mapped("name")) if record.order_ids else ""
+    pedidos_txt = ", ".join(record.contract_ids.mapped("name")) if record.contract_ids else ""
     origen_txt = record.origin_document or ""
     document_name = (pedidos_txt + " " + origen_txt).strip() or (record.reference or record.name or "Aval")
+    name: record.reference or record.name or document_name or "Aval",
 
     document_vals = {
-        "name": record.reference or record.name or document_name or "Aval",
+        "name": name,
         "datas": record.pdf_aval,
         "mimetype": "application/pdf",
         "res_model": "sid_bonds_orders",
