@@ -22,8 +22,9 @@
                                 type="object"
                                 name="action_view_sale_orders"
                                 icon="fa-tags"
-                                attrs="{'invisible': [('order_ids', '=', False)]}"
-                                domain="[('quotations_id','in', order_ids.ids), ('partner_id','=', partner_id), ('state','=','sale')]">
+                                attrs="{'invisible': [('order_ids', '=', False)]}">
+<!-- Al ser un botón tipo object no aplica que tenga domínio
+  domain="[('quotations_id','in', order_ids.ids), ('partner_id','=', partner_id), ('state','=','sale')]">-->
                             <div class="o_stat_info">
                                 <field name="base_pedidos" widget="statinfo" nolabel="1"/>
                                 <span class="o_stat_text">Pedidos</span>

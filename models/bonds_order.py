@@ -55,7 +55,6 @@ class BondsOrder ( models.Model ) :
     name = fields.Char (
         string="Referencia",
         default=lambda self : _ ( "New" ),
-        compute="_compute_name",
         copy=False,
         store=True,
         tracking=True,
