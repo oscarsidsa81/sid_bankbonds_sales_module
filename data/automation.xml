@@ -19,10 +19,13 @@ for record in records:
     pedidos_txt = ", ".join(record.contract_ids.mapped("name")) if record.contract_ids else ""
     origen_txt = record.origin_document or ""
     document_name = (pedidos_txt + " " + origen_txt).strip() or (record.reference or record.name or "Aval")
-    name = record.reference or record.name or document_name or "Aval",
+    raw_name = record.reference or record.name or document_name or "Aval"
+    if isinstance(raw_name, (tuple, list)):
+        raw_name = raw_name[0] if raw_name else "Aval"
+    name_aval = str(raw_name).strip() or "Aval"
 
     document_vals = {
-        "name": name,
+        "name": name_aval,
         "datas": record.pdf_aval,
         "mimetype": "application/pdf",
         "res_model": "sid_bonds_orders",
