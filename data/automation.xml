@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="0">
+    <data>
 
         <!-- 1) Acción de servidor -->
         <record id="ir_actions_server_sid_bonds_pdf_uploaded" model="ir.actions.server">
