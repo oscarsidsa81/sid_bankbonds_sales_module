@@ -234,6 +234,26 @@ class BondsOrder ( models.Model ) :
 
 class SaleQuotationsBonds(models.Model):
     _inherit = "sale.quotations"
+    _description = "Contratos/Pedidos"
+    _parent_store = True  # activa parent_path
+
+    parent_id = fields.Many2one(
+        comodel_name="sale.quotations",
+        string="Contrato Principal",
+        index=True,
+        ondelete="restrict",
+    )
+
+    child_ids = fields.One2many(
+        comodel_name="sale.quotations",
+        inverse_name="parent_id",
+        string="Adendas",
+    )
+
+    parent_path = fields.Char(index=True)
+
+    # TODO aquí es posible que necesitemos Many2many, al final puede haber
+    # varios avales para un solo contrato o varios
 
     bond_id = fields.Many2one(
         comodel_name="sid_bonds_orders",
