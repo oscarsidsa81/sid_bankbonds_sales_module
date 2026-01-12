@@ -63,7 +63,7 @@
                             <field name="reference"/>
                             <field name="issue_date"/>
                             <field name="due_date"/>
-                            <field name="order_ids" widget="many2many_tags"/>
+                            <field name="contract_ids" widget="many2many_tags"/>
                             <field name="origin_document" readonly="1"/>
                         </group>
 

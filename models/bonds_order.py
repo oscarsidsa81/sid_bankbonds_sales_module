@@ -10,45 +10,22 @@ class BondsOrder ( models.Model ) :
     _order = "create_date desc"
 
     def write(self, vals) :
-        res = super ().write ( vals )
-
-        if "reference" in vals :
-            for rec in self :
-                if rec.reference :
-                    rec.name = rec.reference
-
-        return res
-
-    def _compute_order_ids(self) :
-        for bond in self :
-            bond.order_ids = bond.contract_ids
-
-    def _inverse_order_ids(self) :
-        for bond in self :
-            new_quots = bond.order_ids
-            old_quots = bond.contract_ids
-
-            # añadir: las nuevas
-            (new_quots - old_quots).write ( {"bond_id" : bond.id} )
-            # quitar: las que ya no estén
-            (old_quots - new_quots).write ( {"bond_id" : False} )
+        if "reference" in vals and vals.get ( "reference" ) :
+            vals = dict ( vals )
+            vals["name"] = vals["reference"]
+        return super ().write ( vals )
 
     def action_view_sale_orders(self) :
-        bonds = self.filtered ( lambda b : b.partner_id and b.contract_ids )
+        bonds = self.filtered ( lambda b : b.contract_ids )
+        action = self.env.ref ( "sale.action_orders" ).read ()[0]
         if not bonds :
-            return self.env.ref ( "sale.action_orders" ).read ()[0]
+            return action
 
         quotation_ids = bonds.mapped ( "contract_ids" ).ids
-        partner_ids = bonds.mapped ( "partner_id" ).ids
-
-        domain = [
+        action["domain"] = [
             ("quotations_id", "in", quotation_ids),
             ("state", "=", "sale"),
-            ("partner_id", "in", partner_ids),
         ]
-
-        action = self.env.ref ( "sale.action_orders" ).read ()[0]
-        action["domain"] = domain
         action["context"] = dict ( self.env.context )
         return action
 
@@ -89,21 +66,13 @@ class BondsOrder ( models.Model ) :
     )
 
     contract_ids = fields.Many2many (
-        comodel_name="sale.quotations",
+        "sale.quotations",
         relation="sid_bonds_quotation_rel",
         column1="bond_id",
         column2="quotation_id",
-        string="Contratos",
-        copy=False,
+        string="Contratos / Pedidos",
         tracking=True,
-    )
-
-    order_ids = fields.Many2many (
-        comodel_name="sale.quotations",
-        string="Pedidos",
-        compute="_compute_order_ids",
-        inverse="_inverse_order_ids",
-        store=False,
+        copy=False,
     )
 
     base_pedidos = fields.Monetary (
@@ -154,7 +123,6 @@ class BondsOrder ( models.Model ) :
     # Con esta computación podemos tener el amount_untaxed de los pedidos confirmados que estén relacionados con el valor de quotations_id
     @api.depends (
         "contract_ids",
-        "order_ids",
         "partner_id",
         "contract_ids.sale_order_ids.amount_untaxed",
         "contract_ids.sale_order_ids.state",
@@ -235,25 +203,25 @@ class BondsOrder ( models.Model ) :
         return super ().unlink ()
 
 
-class SaleQuotationsBonds(models.Model):
+class SaleQuotationsBonds ( models.Model ) :
     _inherit = "sale.quotations"
     _description = "Contratos/Pedidos"
     _parent_store = True  # activa parent_path
 
-    parent_id = fields.Many2one(
+    parent_id = fields.Many2one (
         comodel_name="sale.quotations",
         string="Contrato Principal",
         index=True,
         ondelete="restrict",
     )
 
-    child_ids = fields.One2many(
+    child_ids = fields.One2many (
         comodel_name="sale.quotations",
         inverse_name="parent_id",
         string="Adendas",
     )
 
-    parent_path = fields.Char(index=True)
+    parent_path = fields.Char ( index=True )
 
     # # TODO aquí es posible que necesitemos Many2many, al final puede haber
     #
@@ -273,7 +241,7 @@ class SaleQuotationsBonds(models.Model):
         string="Avales",
     )
 
-    sale_order_ids = fields.One2many(
+    sale_order_ids = fields.One2many (
         comodel_name="sale.order",
         inverse_name="quotations_id",
         string="Pedidos (Sale Orders)",
