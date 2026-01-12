@@ -88,11 +88,14 @@ class BondsOrder ( models.Model ) :
         store=True,
     )
 
-    contract_ids = fields.One2many (
+    contract_ids = fields.Many2many (
         comodel_name="sale.quotations",
-        inverse_name="bond_id",
-        string="Contrato",
-        copy=True,
+        relation="sid_bonds_quotation_rel",
+        column1="bond_id",
+        column2="quotation_id",
+        string="Contratos",
+        copy=False,
+        tracking=True,
     )
 
     order_ids = fields.Many2many (
@@ -252,15 +255,15 @@ class SaleQuotationsBonds(models.Model):
 
     parent_path = fields.Char(index=True)
 
-    # TODO aquí es posible que necesitemos Many2many, al final puede haber
-    # varios avales para un solo contrato o varios
-
-    bond_id = fields.Many2one(
-        comodel_name="sid_bonds_orders",
-        string="Aval",
-        ondelete="set null",
-        index=True,
-    )
+    # # TODO aquí es posible que necesitemos Many2many, al final puede haber
+    # # varios avales para un solo contrato o varios
+    #
+    # bond_id = fields.Many2one(
+    #     comodel_name="sid_bonds_orders",
+    #     string="Aval",
+    #     ondelete="set null",
+    #     index=True,
+    # )
 
     sale_order_ids = fields.One2many(
         comodel_name="sale.order",
