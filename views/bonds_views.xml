@@ -22,9 +22,7 @@
                                 type="object"
                                 name="action_view_sale_orders"
                                 icon="fa-tags"
-                                attrs="{'invisible': [('order_ids', '=', False)]}">
-<!-- Al ser un botón tipo object no aplica que tenga domínio
-  domain="[('quotations_id','in', order_ids.ids), ('partner_id','=', partner_id), ('state','=','sale')]">-->
+                                attrs="{'invisible': [('contract_ids', '=', False)]}">
                             <div class="o_stat_info">
                                 <field name="base_pedidos" widget="statinfo" nolabel="1"/>
                                 <span class="o_stat_text">Pedidos</span>
@@ -108,15 +106,15 @@
             <tree string="Avales">
                 <field name="aval_type"/>
                 <field name="reference"/>
-                <button class="oe_inline" icon="fa-suitcase" name="action_view_sale_orders" type="object" help="Pedidos"/>
-                <field name="order_ids" widget="many2many_tags"/>
+                <button class="oe_inline" icon="fa-suitcase" name="action_view_sale_orders" type="object"
+                        help="Pedidos"/>
+                <field name="contract_ids" widget="many2many_tags"/>
                 <field name="partner_id"/>
                 <field name="journal_id"/>
                 <field name="issue_date"/>
                 <field name="due_date"/>
                 <field name="base_pedidos"/>
-                <field name="amount" widget="monetary"
-                       options="{'currency_field':'currency_id'}"/>
+                <field name="amount" widget="monetary" options="{'currency_field':'currency_id'}"/>
                 <field name="currency_id"/>
                 <field name="state" widget="badge"/>
             </tree>
