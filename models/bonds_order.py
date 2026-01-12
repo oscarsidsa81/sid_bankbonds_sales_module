@@ -256,7 +256,6 @@ class SaleQuotationsBonds(models.Model):
     parent_path = fields.Char(index=True)
 
     # # TODO aquí es posible que necesitemos Many2many, al final puede haber
-    # # varios avales para un solo contrato o varios
     #
     # bond_id = fields.Many2one(
     #     comodel_name="sid_bonds_orders",
@@ -264,6 +263,15 @@ class SaleQuotationsBonds(models.Model):
     #     ondelete="set null",
     #     index=True,
     # )
+
+    # # varios avales para un solo contrato o varios
+    bond_ids = fields.Many2many (
+        comodel_name="sid_bonds_orders",
+        relation="sid_bonds_quotation_rel",
+        column1="quotation_id",
+        column2="bond_id",
+        string="Avales",
+    )
 
     sale_order_ids = fields.One2many(
         comodel_name="sale.order",
