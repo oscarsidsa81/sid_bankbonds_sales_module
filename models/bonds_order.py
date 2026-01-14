@@ -415,15 +415,25 @@ class SaleQuotationsBonds(models.Model):
                 )
 
     @api.depends (
-        "sale_order_ids",
+        "parent_id",
+        "child_ids",
+        "parent_path",  # para que refresque la jerarquía
         "sale_order_ids.state",
-        "sale_order_ids.quotations_id",
+        "sale_order_ids.date_order",
+        "sale_order_ids.partner_id",
+        "child_ids.sale_order_ids.state",
+        "child_ids.sale_order_ids.date_order",
+        "child_ids.sale_order_ids.partner_id",
+        "parent_id.sale_order_ids.state",
+        "parent_id.sale_order_ids.date_order",
+        "parent_id.sale_order_ids.partner_id",
     )
     def _compute_sale_order_sale_ids(self) :
         for rec in self :
-            # filtrado en memoria (rápido y fiable, no rompe dependencias)
-            rec.sale_order_sale_ids = rec.sale_order_ids.filtered (
+            family = rec._get_family_quotations ()
+            orders = family.mapped ( "sale_order_ids" ).filtered (
                 lambda so : so.state == "sale" )
+            rec.sale_order_sale_ids = orders
 
     @api.depends(
         "sale_order_sale_ids",
@@ -560,6 +570,12 @@ class SaleQuotationsBonds(models.Model):
         so_latest = so.sorted(lambda s: s.date_order or fields.Datetime.now(), reverse=True)[:1]
         return so_latest.partner_id
 
+    def _get_family_quotations(self):
+        """Devuelve el contrato principal (root) y todas sus adendas (descendientes)."""
+        self.ensure_one()
+        root = self.parent_id or self
+        return self.search([("id", "child_of", root.id)])
+
     @api.constrains("parent_id", "child_ids")
     def _check_parent_child_same_partner(self):
         for rec in self:
@@ -606,3 +622,4 @@ class SaleQuotationsBonds(models.Model):
                 raise ValidationError(_(
                     "Un contrato con adendas no puede tener contrato principal (parent_id)."
                 ))
+
