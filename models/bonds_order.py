@@ -384,7 +384,7 @@ class SaleQuotationsBonds(models.Model):
     bond_ids = fields.Many2many (
         comodel_name="sid_bonds_orders",
         relation="sid_bonds_quotation_rel",
-        column1="sale_order_id",
+        column1="quotation_id",
         column2="bond_id",
         string="Avales",
     )
