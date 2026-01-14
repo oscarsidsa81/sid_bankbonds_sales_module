@@ -109,8 +109,8 @@ class BondsOrder ( models.Model ) :
 
     aval_type = fields.Selection (
         [
-            ("adelanto", "Provisional"),
-            ("fiel_gar", "Fiel Cumplimiento y Garantía"),
+            ("prov", "Provisional"),
+            ("adel", "Adelanto"),
             ("fiel", "Fiel Cumplimiento"),
             ("gar", "Garantía"),
         ],
