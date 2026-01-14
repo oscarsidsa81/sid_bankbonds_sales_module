@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -341,7 +342,7 @@ class BondsOrder ( models.Model ) :
 
 
 class SaleQuotationsBonds(models.Model):
-    _inherit = ["sale.order", "mail.thread", "mail.activity.mixin"]
+    _inherit = ["sale.quotations", "mail.thread", "mail.activity.mixin"]
     _description = "Contratos/Pedidos"
     _parent_store = True  # activa parent_path (solo si tienes parent_path en el modelo)
     _parent_name = "parent_id"
