@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class BondsOrder ( models.Model ) :
     _name = "sid_bonds_orders"
@@ -9,7 +11,8 @@ class BondsOrder ( models.Model ) :
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
-    _BOND_STATES_SKIP_NOTIFY = {"expired", "solicit_dev", "recovered", "solicit_can", "cancelled"}
+    _BOND_STATES_SKIP_NOTIFY = {"expired", "solicit_dev", "recovered",
+                                "solicit_can", "cancelled"}
 
     name = fields.Char (
         string="Referencia",
@@ -103,62 +106,63 @@ class BondsOrder ( models.Model ) :
 
     description = fields.Text ( string="Descripción / Notas" )
 
-    def write(self, vals):
+    def write(self, vals) :
         # 1) Guardamos el valor anterior (calculado) antes del write
         # OJO: base_pedidos es compute store=False => se calcula al acceder
-        old_map = {b.id: b.base_pedidos for b in self}
+        old_map = {b.id : b.base_pedidos for b in self}
 
         # 2) write normal (y tu lógica de name/reference si la mantienes)
-        if "reference" in vals and vals.get("reference"):
-            vals = dict(vals)
+        if "reference" in vals and vals.get ( "reference" ) :
+            vals = dict ( vals )
             vals["name"] = vals["reference"]
 
-        res = super().write(vals)
+        res = super ().write ( vals )
 
         # 3) Si el write afecta a algo que pueda cambiar la base, evaluamos después
         # Esto evita spam si editas campos no relacionados.
-        triggers = {"contract_ids","base_pedidos", "partner_id"}  # si quieres, añade aquí otras cosas
-        if triggers.intersection(vals.keys()):
-            self._post_base_pedidos_variation_note(old_map)
+        triggers = {"contract_ids", "base_pedidos",
+                    "partner_id"}  # si quieres, añade aquí otras cosas
+        if triggers.intersection ( vals.keys () ) :
+            self._post_base_pedidos_variation_note ( old_map )
 
         return res
 
-
-    def _schedule_creator_todo(self, old_value, new_value, pct):
+    def _schedule_creator_todo(self, old_value, new_value, pct) :
         """
         Activity tipo 'Por hacer' para create_uid (si existe).
         Evita duplicados abiertos con el mismo resumen.
         """
-        self.ensure_one()
-        if not self.create_uid:
+        self.ensure_one ()
+        if not self.create_uid :
             return
 
         # tipo de actividad 'Por hacer' estándar
-        todo_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
-        if not todo_type:
+        todo_type = self.env.ref ( "mail.mail_activity_data_todo",
+                                   raise_if_not_found=False )
+        if not todo_type :
             return
 
-        summary = _("Revisar necesidad de ampliar aval")
-        note = _(
+        summary = _ ( "Revisar necesidad de ampliar aval" )
+        note = _ (
             "Se detectó variación > 3%% en Base Imponible Pedidos.\n"
             "Anterior: %(old)s\nNuevo: %(new)s\nCambio: %(pct).2f%%\n\n"
             "Revisar si es necesario ampliar el aval o avales asociados."
-        ) % {"old": old_value, "new": new_value, "pct": pct}
+        ) % {"old" : old_value, "new" : new_value, "pct" : pct}
 
         # evita spam: si ya hay una activity abierta igual, no crear otra
-        existing = self.env["mail.activity"].search([
+        existing = self.env["mail.activity"].search ( [
             ("res_model", "=", self._name),
             ("res_id", "=", self.id),
             ("user_id", "=", self.create_uid.id),
             ("activity_type_id", "=", todo_type.id),
             ("summary", "=", summary),
             ("state", "=", "planned"),
-        ], limit=1)
-        if existing:
+        ], limit=1 )
+        if existing :
             return
 
-        deadline = fields.Date.context_today(self)  # hoy
-        self.activity_schedule(
+        deadline = fields.Date.context_today ( self )  # hoy
+        self.activity_schedule (
             activity_type_id=todo_type.id,
             user_id=self.create_uid.id,
             summary=summary,
@@ -166,69 +170,70 @@ class BondsOrder ( models.Model ) :
             date_deadline=deadline,
         )
 
-
-    def _get_bonds_manager_partners(self):
+    def _get_bonds_manager_partners(self) :
         """Devuelve res.partner (partners) de usuarios del grupo de Gestión de Avales."""
-        group = self.env.ref("sid_bankbonds_sales_module.group_bonds_manager", raise_if_not_found=False)
-        if not group:
+        group = self.env.ref (
+            "sid_bankbonds_sales_module.group_bonds_manager",
+            raise_if_not_found=False )
+        if not group :
             return self.env["res.partner"]
         users = group.users
-        return users.mapped("partner_id")
+        return users.mapped ( "partner_id" )
 
-    def _post_base_pedidos_variation_note(self, old_map):
+    def _post_base_pedidos_variation_note(self, old_map) :
         """
         old_map: {bond_id: old_base_pedidos}
         Si variación > 3% (contra valor anterior) y estado permitido:
           - publica nota interna mencionando a usuarios del grupo
           - crea activity tipo Por hacer para create_uid
         """
-        partners = self._get_bonds_manager_partners()
+        partners = self._get_bonds_manager_partners ()
 
-        for bond in self:
+        for bond in self :
             # 1) estados excluidos
-            if bond.state in self._BOND_STATES_SKIP_NOTIFY:
+            if bond.state in self._BOND_STATES_SKIP_NOTIFY :
                 continue
 
-            old = float(old_map.get(bond.id, 0.0) or 0.0)
-            new = float(bond.base_pedidos or 0.0)
+            old = float ( old_map.get ( bond.id, 0.0 ) or 0.0 )
+            new = float ( bond.base_pedidos or 0.0 )
 
             # si ambos 0, nada
-            if old == 0.0 and new == 0.0:
+            if old == 0.0 and new == 0.0 :
                 continue
 
             # 2) % contra valor anterior (si old == 0, no se puede dividir)
-            if old == 0.0:
+            if old == 0.0 :
                 # Si quieres que 0 -> algo dispare siempre, deja esto así:
                 pct = 100.0
                 changed = (new != 0.0)
-            else:
-                pct = abs(new - old) / abs(old) * 100.0
+            else :
+                pct = abs ( new - old ) / abs ( old ) * 100.0
                 changed = pct > 3.0
 
-            if not changed:
+            if not changed :
                 continue
 
             # 3) menciones HTML (solo si hay partners)
             mentions_html = ""
-            if partners:
-                mentions_html = " ".join(
+            if partners :
+                mentions_html = " ".join (
                     f'<a data-oe-model="res.partner" data-oe-id="{p.id}">@{p.display_name}</a>'
                     for p in partners
                 )
 
-            body = _(
+            body = _ (
                 "<p><b>Variación en Base Imponible Pedidos</b> (&gt; 3%%)</p>"
                 "<p>Anterior: %(old)s<br/>Nuevo: %(new)s<br/>Cambio: %(pct).2f%%</p>"
                 "%(mentions)s"
             ) % {
-                "old": old,
-                "new": new,
-                "pct": pct,
-                "mentions": f"<p>{mentions_html}</p>" if mentions_html else "",
-            }
+                       "old" : old,
+                       "new" : new,
+                       "pct" : pct,
+                       "mentions" : f"<p>{mentions_html}</p>" if mentions_html else "",
+                   }
 
             # 4) Nota interna. Además, notifica a esos partners (opcional pero útil)
-            bond.message_post(
+            bond.message_post (
                 body=body,
                 message_type="comment",
                 subtype_xmlid="mail.mt_note",
@@ -236,7 +241,7 @@ class BondsOrder ( models.Model ) :
             )
 
             # 5) Activity al creador
-            bond._schedule_creator_todo(old, new, pct)
+            bond._schedule_creator_todo ( old, new, pct )
 
     def action_view_sale_orders(self) :
         bonds = self.filtered ( lambda b : b.contract_ids )
@@ -353,6 +358,13 @@ class SaleQuotationsBonds ( models.Model ) :
         string="Adendas",
     )
 
+    partner_id = fields.Many2one (
+        "res.partner",
+        string="Cliente",
+        compute="_compute_sale_partner_id",
+        tracking=True,
+        store=True )
+
     parent_path = fields.Char ( index=True )
 
     # # TODO aquí es posible que necesitemos Many2many, al final puede haber
@@ -374,7 +386,7 @@ class SaleQuotationsBonds ( models.Model ) :
     )
 
     # Relación "ancla" (debe existir realmente en tu modelo)
-    sale_order_ids = fields.One2many(
+    sale_order_ids = fields.One2many (
         comodel_name="sale.order",
         inverse_name="quotations_id",
         string="Pedidos (Sale Orders)",
@@ -382,7 +394,7 @@ class SaleQuotationsBonds ( models.Model ) :
     )
 
     # Campo para mostrar SOLO los confirmados (state='sale')
-    sale_order_sale_ids = fields.Many2many(
+    sale_order_sale_ids = fields.Many2many (
         comodel_name="sale.order",
         string="Pedidos confirmados",
         compute="_compute_sale_order_sale_ids",
@@ -390,12 +402,53 @@ class SaleQuotationsBonds ( models.Model ) :
         readonly=True,
     )
 
-    @api.depends(
+    @api.depends (
         "sale_order_ids",
         "sale_order_ids.state",
         "sale_order_ids.quotations_id",
     )
-    def _compute_sale_order_sale_ids(self):
-        for rec in self:
+    def _compute_sale_order_sale_ids(self) :
+        for rec in self :
             # filtrado en memoria (rápido y fiable, no rompe dependencias)
-            rec.sale_order_sale_ids = rec.sale_order_ids.filtered(lambda so: so.state == "sale")
+            rec.sale_order_sale_ids = rec.sale_order_ids.filtered (
+                lambda so : so.state == "sale" )
+
+    @api.depends(
+        "sale_order_sale_ids",
+        "sale_order_sale_ids.partner_id",
+        "sale_order_sale_ids.date_order",
+    )
+
+    def _compute_sale_partner_id(self):
+        for rec in self:
+            partners = rec.sale_order_sale_ids.mapped("partner_id").filtered(lambda p: p)
+
+            if not partners:
+                rec.partner_id = False
+                continue
+
+            # Elegimos el partner del pedido confirmado más reciente
+            # (si date_order es False, lo empujamos “hacia atrás” con un fallback mínimo)
+            def _key(so):
+                return so.date_order or fields.Datetime.from_string("1970-01-01 00:00:00")
+
+            so_latest = rec.sale_order_sale_ids.sorted(key=_key, reverse=True)[:1]
+            # so_latest es un recordset de 0/1
+            rec.partner_id = so_latest.partner_id.id if so_latest else False
+
+            # Aviso NO bloqueante si hay más de un cliente
+            if len(partners) > 1 and rec.partner_id:
+                msg = _(
+                    "Atención: hay múltiples clientes en pedidos confirmados (%s). "
+                    "Se ha fijado el cliente del pedido más reciente (%s)."
+                ) % (", ".join(partners.mapped("display_name")), rec.partner_id.display_name)
+
+                # Si el modelo tiene chatter:
+                if hasattr(rec, "message_post"):
+                    rec.message_post(
+                        body=msg,
+                        message_type="comment",
+                        subtype_xmlid="mail.mt_note",
+                    )
+                else:
+                    _logger.warning("%s", msg)
