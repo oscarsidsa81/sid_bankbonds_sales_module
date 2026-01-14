@@ -373,13 +373,16 @@ class SaleQuotationsBonds ( models.Model ) :
         string="Avales",
     )
 
-    sale_order_ids = fields.Many2many(
-    comodel_name="sale.order",
-    compute="_compute_sale_order_done_ids",
-    string="Pedidos Confirmados",
-    store=False,
-)
+    sale_order_sale_ids = fields.Many2many (
+        "sale.order",
+        compute="_compute_sale_order_sale_ids",
+        string="Pedidos Confirmados",
+        store=False,
+    )
 
-    def _compute_sale_order_done_ids(self):
-        for rec in self:
-            rec.sale_order_ids = rec.sale_order_ids.filtered(lambda so: so.state == "sale")
+    @api.depends ( "sale_order_ids.state", "sale_order_ids.quotations_id" )
+    def _compute_sale_order_sale_ids(self) :
+        for rec in self :
+            rec.sale_order_sale_ids = rec.sale_order_ids.filtered (
+                lambda so : so.state == "sale" )
+
