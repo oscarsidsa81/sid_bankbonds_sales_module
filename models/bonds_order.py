@@ -341,7 +341,7 @@ class BondsOrder ( models.Model ) :
 
 
 class SaleQuotationsBonds ( models.Model ) :
-    _inherit = "sale.quotations"
+    _inherit = ["sale.quotations", "mail.thread", "mail.activity.mixin"]
     _description = "Contratos/Pedidos"
     _parent_store = True  # activa parent_path
 
