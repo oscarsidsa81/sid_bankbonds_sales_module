@@ -113,6 +113,7 @@ class BondsOrder ( models.Model ) :
             ("adel", "Adelanto"),
             ("fiel", "Fiel Cumplimiento"),
             ("gar", "Garantía"),
+            ("fiel_gar", "Fiel Cumplimiento"),
         ],
         string="Tipo",
         tracking=True,
