@@ -347,15 +347,17 @@ class SaleQuotationsBonds(models.Model):
     _parent_name = "parent_id"
 
     parent_id = fields.Many2one(
-        comodel_name="sale.quotations",
+        "sale.order",
         string="Contrato Principal",
         index=True,
         ondelete="restrict",
     )
 
+    parent_path = fields.Char(index=True)
+
     child_ids = fields.One2many(
-        comodel_name="sale.quotations",
-        inverse_name="parent_id",
+        "sale.order",
+        "parent_id",
         string="Adendas",
     )
 
@@ -365,8 +367,6 @@ class SaleQuotationsBonds(models.Model):
         compute="_compute_sale_partner_id",
         tracking=True,
         store=True )
-
-    parent_path = fields.Char ( index=True )
 
     # # TODO aquí es posible que necesitemos Many2many, al final puede haber
     #
@@ -381,7 +381,7 @@ class SaleQuotationsBonds(models.Model):
     bond_ids = fields.Many2many (
         comodel_name="sid_bonds_orders",
         relation="sid_bonds_quotation_rel",
-        column1="quotation_id",
+        column1="sale_order_id",
         column2="bond_id",
         string="Avales",
     )
