@@ -486,7 +486,7 @@ class SaleQuotationsBonds ( models.Model ) :
         if not groups:
             return [("id", "=", 0)]
         # purchase.order usually has group_id
-        return [("procurement_group_id", "in", groups.ids)]
+        return [("group_id", "in", groups.ids)]
 
     def _get_purchase_orders(self):
         return self.env["purchase.order"]
