@@ -45,7 +45,7 @@
                                 <field name="name" string="Contrato/Pedido"/>
                                 <field name="parent_id"
                                        string="Principal"
-                                       attrs="{'invisible': [('parent_id','=',False)], 'readonly': [('child_ids','!=',False)]}"/>
+                                       attrs="{'readonly': [('child_ids','!=',False)]}"/>
 
                                 <field name="child_ids"
                                        string="Adendas"
