@@ -417,16 +417,10 @@ class SaleQuotationsBonds(models.Model):
     @api.depends (
         "parent_id",
         "child_ids",
-        "parent_path",  # para que refresque la jerarquía
+        "parent_path",
         "sale_order_ids.state",
-        "sale_order_ids.date_order",
-        "sale_order_ids.partner_id",
         "child_ids.sale_order_ids.state",
-        "child_ids.sale_order_ids.date_order",
-        "child_ids.sale_order_ids.partner_id",
         "parent_id.sale_order_ids.state",
-        "parent_id.sale_order_ids.date_order",
-        "parent_id.sale_order_ids.partner_id",
     )
     def _compute_sale_order_sale_ids(self) :
         for rec in self :
@@ -570,11 +564,29 @@ class SaleQuotationsBonds(models.Model):
         so_latest = so.sorted(lambda s: s.date_order or fields.Datetime.now(), reverse=True)[:1]
         return so_latest.partner_id
 
-    def _get_family_quotations(self):
-        """Devuelve el contrato principal (root) y todas sus adendas (descendientes)."""
-        self.ensure_one()
+    def _get_family_quotations(self) :
+        """Devuelve root + descendientes. Soporta registros nuevos (NewId) en onchange."""
+        self.ensure_one ()
+
+        # 1) si soy adenda, el root es mi parent (si existe), si no, yo
         root = self.parent_id or self
-        return self.search([("id", "child_of", root.id)])
+
+        # 2) Si el root aún no está guardado, NO se puede usar child_of en SQL
+        if not root.id or isinstance ( root.id, models.NewId ) :
+            # En onchange solo podemos devolver lo que "vemos" en memoria
+            # - yo mismo
+            # - mis child_ids (si yo soy root)
+            # - o los siblings si soy child y el parent tiene child_ids en memoria
+            if self.parent_id :
+                # soy adenda: familia = parent + siblings + yo (lo que haya cargado en pantalla)
+                fam = self.parent_id | self.parent_id.child_ids
+                return fam
+            else :
+                # soy principal nuevo: familia = yo + mis child_ids (en memoria)
+                return self | self.child_ids
+
+        # 3) Caso normal (guardado): SQL con child_of (rápido y completo)
+        return self.search ( [("id", "child_of", root.id)] )
 
     @api.constrains("parent_id", "child_ids")
     def _check_parent_child_same_partner(self):
