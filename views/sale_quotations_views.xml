@@ -97,7 +97,7 @@
                 <tree string="Contracts">
                     <field name="name" string="Contract" readonly="1" decoration-bf="1"/>
                     <field name="partner_id" string="Cliente" readonly="1" decoration-bf="1"/>
-                    <field name="sale_order_sale_ids" widget="Many2Many_tags" readonly="1"/>
+                    <field name="sale_order_sale_ids" widget="many2many_tags" readonly="1"/>
                 </tree>
             </field>
         </record> <!-- =============================== SEARCH VIEW: sale.quotations ========================================================= -->
