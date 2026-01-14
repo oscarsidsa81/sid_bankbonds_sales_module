@@ -406,6 +406,14 @@ class SaleQuotationsBonds(models.Model):
         readonly=True,
     )
 
+    @api.constrains("parent_id", "child_ids")
+    def _check_parent_child_exclusive(self):
+        for rec in self:
+            if rec.parent_id and rec.child_ids:
+                raise ValidationError(
+                    _("Un contrato no puede tener 'Principal' y 'Adendas' a la vez.")
+                )
+
     @api.depends (
         "sale_order_ids",
         "sale_order_ids.state",
