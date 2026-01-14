@@ -356,13 +356,13 @@ class SaleQuotationsBonds(models.Model):
         ondelete="restrict",
     )
 
-    parent_path = fields.Char(index=True)
-
     child_ids = fields.One2many (
         comodel_name="sale.quotations",
         inverse_name="parent_id",
         string="Adendas",
     )
+
+    parent_path = fields.Char(index=True)
 
     partner_id = fields.Many2one (
         "res.partner",
