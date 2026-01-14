@@ -347,7 +347,7 @@ class SaleQuotationsBonds(models.Model):
     _parent_name = "parent_id"
 
     parent_id = fields.Many2one(
-        "sale.order",
+        "sale.quotations",
         string="Contrato Principal",
         index=True,
         ondelete="restrict",
@@ -356,7 +356,7 @@ class SaleQuotationsBonds(models.Model):
     parent_path = fields.Char(index=True)
 
     child_ids = fields.One2many(
-        "sale.order",
+        "sale.quotations",
         "parent_id",
         string="Adendas",
     )
