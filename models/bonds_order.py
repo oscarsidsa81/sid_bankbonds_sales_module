@@ -9,25 +9,7 @@ class BondsOrder ( models.Model ) :
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "create_date desc"
 
-    def write(self, vals) :
-        if "reference" in vals and vals.get ( "reference" ) :
-            vals = dict ( vals )
-            vals["name"] = vals["reference"]
-        return super ().write ( vals )
-
-    def action_view_sale_orders(self) :
-        bonds = self.filtered ( lambda b : b.contract_ids )
-        action = self.env.ref ( "sale.action_orders" ).read ()[0]
-        if not bonds :
-            return action
-
-        quotation_ids = bonds.mapped ( "contract_ids" ).ids
-        action["domain"] = [
-            ("quotations_id", "in", quotation_ids),
-            ("state", "=", "sale"),
-        ]
-        action["context"] = dict ( self.env.context )
-        return action
+    _BOND_STATES_SKIP_NOTIFY = {"expired", "solicit_dev", "recovered", "solicit_can", "cancelled"}
 
     name = fields.Char (
         string="Referencia",
@@ -90,16 +72,16 @@ class BondsOrder ( models.Model ) :
     state = fields.Selection (
         [
             ("draft", "Borrador"),
-            ("requested", "Solicitado"),
-            ("active", "Vigente"),
-            ("expired", "Vencido"),
-            ("cancelled", "Cancelado"),
             ("pending_bank", "Pendiente Banco"),
+            ("requested", "Solicitado"),
             ("sent", "Enviado a cliente"),
             ("receipt", "Recibido cliente"),
+            ("active", "Vigente"),
+            ("expired", "Vencido"),
             ("solicit_dev", "Solicitada Devolución"),
             ("recovered", "Recuperado"),
             ("solicit_can", "Solicitada Cancelación"),
+            ("cancelled", "Cancelado"),
         ],
         string="Estado",
         default="draft",
@@ -120,6 +102,155 @@ class BondsOrder ( models.Model ) :
     )
 
     description = fields.Text ( string="Descripción / Notas" )
+
+    def write(self, vals):
+        # 1) Guardamos el valor anterior (calculado) antes del write
+        # OJO: base_pedidos es compute store=False => se calcula al acceder
+        old_map = {b.id: b.base_pedidos for b in self}
+
+        # 2) write normal (y tu lógica de name/reference si la mantienes)
+        if "reference" in vals and vals.get("reference"):
+            vals = dict(vals)
+            vals["name"] = vals["reference"]
+
+        res = super().write(vals)
+
+        # 3) Si el write afecta a algo que pueda cambiar la base, evaluamos después
+        # Esto evita spam si editas campos no relacionados.
+        triggers = {"contract_ids","base_pedidos", "partner_id"}  # si quieres, añade aquí otras cosas
+        if triggers.intersection(vals.keys()):
+            self._post_base_pedidos_variation_note(old_map)
+
+        return res
+
+
+    def _schedule_creator_todo(self, old_value, new_value, pct):
+        """
+        Activity tipo 'Por hacer' para create_uid (si existe).
+        Evita duplicados abiertos con el mismo resumen.
+        """
+        self.ensure_one()
+        if not self.create_uid:
+            return
+
+        # tipo de actividad 'Por hacer' estándar
+        todo_type = self.env.ref("mail.mail_activity_data_todo", raise_if_not_found=False)
+        if not todo_type:
+            return
+
+        summary = _("Revisar necesidad de ampliar aval")
+        note = _(
+            "Se detectó variación > 3%% en Base Imponible Pedidos.\n"
+            "Anterior: %(old)s\nNuevo: %(new)s\nCambio: %(pct).2f%%\n\n"
+            "Revisar si es necesario ampliar el aval o avales asociados."
+        ) % {"old": old_value, "new": new_value, "pct": pct}
+
+        # evita spam: si ya hay una activity abierta igual, no crear otra
+        existing = self.env["mail.activity"].search([
+            ("res_model", "=", self._name),
+            ("res_id", "=", self.id),
+            ("user_id", "=", self.create_uid.id),
+            ("activity_type_id", "=", todo_type.id),
+            ("summary", "=", summary),
+            ("state", "=", "planned"),
+        ], limit=1)
+        if existing:
+            return
+
+        deadline = fields.Date.context_today(self)  # hoy
+        self.activity_schedule(
+            activity_type_id=todo_type.id,
+            user_id=self.create_uid.id,
+            summary=summary,
+            note=note,
+            date_deadline=deadline,
+        )
+
+
+    def _get_bonds_manager_partners(self):
+        """Devuelve res.partner (partners) de usuarios del grupo de Gestión de Avales."""
+        group = self.env.ref("sid_bankbonds_sales_module.group_bonds_manager", raise_if_not_found=False)
+        if not group:
+            return self.env["res.partner"]
+        users = group.users
+        return users.mapped("partner_id")
+
+    def _post_base_pedidos_variation_note(self, old_map):
+        """
+        old_map: {bond_id: old_base_pedidos}
+        Si variación > 3% (contra valor anterior) y estado permitido:
+          - publica nota interna mencionando a usuarios del grupo
+          - crea activity tipo Por hacer para create_uid
+        """
+        partners = self._get_bonds_manager_partners()
+
+        for bond in self:
+            # 1) estados excluidos
+            if bond.state in self._BOND_STATES_SKIP_NOTIFY:
+                continue
+
+            old = float(old_map.get(bond.id, 0.0) or 0.0)
+            new = float(bond.base_pedidos or 0.0)
+
+            # si ambos 0, nada
+            if old == 0.0 and new == 0.0:
+                continue
+
+            # 2) % contra valor anterior (si old == 0, no se puede dividir)
+            if old == 0.0:
+                # Si quieres que 0 -> algo dispare siempre, deja esto así:
+                pct = 100.0
+                changed = (new != 0.0)
+            else:
+                pct = abs(new - old) / abs(old) * 100.0
+                changed = pct > 3.0
+
+            if not changed:
+                continue
+
+            # 3) menciones HTML (solo si hay partners)
+            mentions_html = ""
+            if partners:
+                mentions_html = " ".join(
+                    f'<a data-oe-model="res.partner" data-oe-id="{p.id}">@{p.display_name}</a>'
+                    for p in partners
+                )
+
+            body = _(
+                "<p><b>Variación en Base Imponible Pedidos</b> (&gt; 3%%)</p>"
+                "<p>Anterior: %(old)s<br/>Nuevo: %(new)s<br/>Cambio: %(pct).2f%%</p>"
+                "%(mentions)s"
+            ) % {
+                "old": old,
+                "new": new,
+                "pct": pct,
+                "mentions": f"<p>{mentions_html}</p>" if mentions_html else "",
+            }
+
+            # 4) Nota interna. Además, notifica a esos partners (opcional pero útil)
+            bond.message_post(
+                body=body,
+                message_type="comment",
+                subtype_xmlid="mail.mt_note",
+                partner_ids=partners.ids if partners else None,
+            )
+
+            # 5) Activity al creador
+            bond._schedule_creator_todo(old, new, pct)
+
+    def action_view_sale_orders(self) :
+        bonds = self.filtered ( lambda b : b.contract_ids )
+        action = self.env.ref ( "sale.action_orders" ).read ()[0]
+        if not bonds :
+            return action
+
+        quotation_ids = bonds.mapped ( "contract_ids" ).ids
+        action["domain"] = [
+            ("quotations_id", "in", quotation_ids),
+            ("state", "=", "sale"),
+        ]
+        action["context"] = dict ( self.env.context )
+        return action
 
     # Con esta computación podemos tener el amount_untaxed de los pedidos confirmados que estén relacionados con el valor de quotations_id
     @api.depends (
