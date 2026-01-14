@@ -9,18 +9,12 @@
             <field name="res_model">sale.quotations</field>
             <field name="view_mode">tree,form</field>
 
-            <!-- Usa tus vistas del módulo -->
+            <!-- tu tree REAL (este xmlid sí existe, según tu parseerror) -->
             <field name="view_id" ref="sid_bankbonds_sales_module.sale_quotations_view_tree"/>
+
+            <!-- opcional -->
             <field name="search_view_id" ref="sid_bankbonds_sales_module.sale_quotations_view_search"/>
 
-            <!-- opcional: define las vistas explícitamente para evitar que Odoo elija mal -->
-            <field name="view_ids" eval="[
-                     (0, 0, {'view_mode': 'tree', 'view_id': ref('sale_quotations_sale_quotations_tree')}),
-                     (0, 0, {'view_mode': 'form', 'view_id': ref('sale_quotations_form')})
-                    ]"/>
-
-            <!-- Opcional: contexto/dominio si quieres -->
-            <!-- <field name="domain">[]</field> -->
             <field name="context">{}</field>
         </record>
 
