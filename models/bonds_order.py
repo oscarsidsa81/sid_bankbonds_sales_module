@@ -380,6 +380,6 @@ class SaleQuotationsBonds ( models.Model ) :
     store=False,
 )
 
-def _compute_sale_order_done_ids(self):
-    for rec in self:
-        rec.sale_order_ids = rec.sale_order_ids.filtered(lambda so: so.state == "sale")
+    def _compute_sale_order_done_ids(self):
+        for rec in self:
+            rec.sale_order_ids = rec.sale_order_ids.filtered(lambda so: so.state == "sale")
