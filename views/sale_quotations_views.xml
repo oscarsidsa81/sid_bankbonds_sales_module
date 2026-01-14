@@ -9,73 +9,65 @@
             <field name="name">sale.quotations.form.ov_avales</field>
             <field name="model">sale.quotations</field>
             <field name="arch" type="xml">
+                <?xml version="1.0"?>
                 <form string="Contrato/Pedido">
                     <sheet>
+
+                        <!-- Campos técnicos para smart buttons -->
                         <field name="child_count" invisible="1"/>
                         <field name="sale_order_count" invisible="1"/>
                         <field name="bond_count" invisible="1"/>
                         <field name="purchase_count" invisible="1"/>
+
+                        <!-- Smart buttons: SIEMPRE fuera de <group> -->
+                        <div class="oe_button_box" name="button_box">
+
+                            <button type="object" name="action_view_children"
+                                    class="oe_stat_button" icon="fa-sitemap"
+                                    attrs="{'invisible': [('child_count', '=', 0)]}">
+                                <field name="child_count" widget="statinfo" string="Adendas"/>
+                            </button>
+
+                            <button type="object" name="action_view_sale_orders"
+                                    class="oe_stat_button" icon="fa-shopping-cart"
+                                    attrs="{'invisible': [('sale_order_count', '=', 0)]}">
+                                <field name="sale_order_count" widget="statinfo" string="Sale Orders"/>
+                            </button>
+
+                            <button type="object" name="action_view_bonds"
+                                    class="oe_stat_button" icon="fa-shield"
+                                    attrs="{'invisible': [('bond_count', '=', 0)]}">
+                                <field name="bond_count" widget="statinfo" string="Avales"/>
+                            </button>
+
+                            <button type="object" name="action_view_purchases"
+                                    class="oe_stat_button" icon="fa-truck"
+                                    attrs="{'invisible': [('purchase_count', '=', 0)]}">
+                                <field name="purchase_count" widget="statinfo" string="Compras"/>
+                            </button>
+
+                        </div>
+
+                        <!-- Datos principales -->
                         <group>
-                            <div class="oe_button_box" name="button_box">
-
-                                <button type="object"
-                                        name="action_view_children"
-                                        class="oe_stat_button"
-                                        icon="fa-sitemap"
-                                        attrs="{'invisible': [('child_count', '=', 0)]}">
-                                    <field name="child_count" widget="statinfo" string="Adendas"/>
-                                </button>
-
-                                <button type="object"
-                                        name="action_view_sale_orders"
-                                        class="oe_stat_button"
-                                        icon="fa-shopping-cart"
-                                        attrs="{'invisible': [('sale_order_count', '=', 0)]}">
-                                    <field name="sale_order_count" widget="statinfo" string="Sale Orders"/>
-                                </button>
-
-                                <button type="object"
-                                        name="action_view_bonds"
-                                        class="oe_stat_button"
-                                        icon="fa-shield"
-                                        attrs="{'invisible': [('bond_count', '=', 0)]}">
-                                    <field name="bond_count" widget="statinfo" string="Avales"/>
-                                </button>
-
-                                <button type="object"
-                                        name="action_view_purchases"
-                                        class="oe_stat_button"
-                                        icon="fa-truck"
-                                        attrs="{'invisible': [('purchase_count', '=', 0)]}">
-                                    <field name="purchase_count" widget="statinfo" string="Compras"/>
-                                </button>
-
-                            </div>
-
-                            <group>
-                                <group>
-                                    <field name="name" string="Contrato/Pedido"/>
-                                    <field name="parent_id" attrs="{'invisible': [('child_ids', '!=', False)]}"
-                                           string="Principal"/>
-                                    <field name="child_ids" attrs="{'invisible': [('parent_id', '!=', False)]}"
-                                           string="Adendas" readonly="1"/>
-                                    ...
-                                </group>
-                            </group>
                             <group>
                                 <field name="name" string="Contrato/Pedido"/>
-                                <field name="parent_id" attrs="{'invisible': [('child_ids', '!=' ,False)]}"
-                                       string="Principal"/>
-                                <field name="child_ids" attrs="{'invisible': [('parent_id', '!=' ,False)]}"
-                                       string="Adendas" readonly="1"/>
+                                <field name="parent_id"
+                                       string="Principal"
+                                       attrs="{'invisible': [('child_ids', '!=', False)]}"/>
+                                <field name="child_ids"
+                                       string="Adendas"
+                                       readonly="1"
+                                       attrs="{'invisible': [('parent_id', '!=', False)]}"/>
+                            </group>
+                        </group>
 
-                                <!-- Presupuestos / Pedidos enlazados -->
+                        <!-- Listas -->
+                        <notebook>
+
+                            <page string="Presupuestos / Pedidos">
                                 <field name="sale_order_sale_ids"
                                        domain="[('state','=','done')]"
-                                       style="width: 100%"
-                                       colspan="5"
-                                       force_save="True"
-                                       attrs="{}"
                                        readonly="1">
                                     <tree string="Presupuestos" create="0">
                                         <field name="quotations_id"/>
@@ -83,35 +75,32 @@
                                         <field name="partner_id"/>
                                         <field name="amount_untaxed" optional="show"/>
                                         <field name="user_id"/>
-                                        <field name="state"
-                                               widget="badge"
+                                        <field name="state" widget="badge"
                                                decoration-success="state == 'done'"/>
                                     </tree>
                                 </field>
+                            </page>
 
-                                <!-- Avales enlazados -->
+                            <page string="Avales">
                                 <field name="bond_ids"
                                        string="Avales"
-                                       style="width: 100%"
-                                       colspan="5"
-                                       force_save="True"
-                                       attrs="{}"
                                        readonly="1">
                                     <tree string="Avales" create="0">
                                         <field name="name"/>
                                         <field name="reference"/>
                                         <field name="amount" optional="show"/>
-                                        <field name="state"
-                                               widget="badge"
+                                        <field name="state" widget="badge"
                                                decoration-success="state == 'done'"
                                                decoration-info="state not in ('done', 'cancel')"/>
                                     </tree>
                                 </field>
+                            </page>
 
-                            </group>
-                        </group>
+                        </notebook>
+
                     </sheet>
                 </form>
+
             </field>
         </record>
 
