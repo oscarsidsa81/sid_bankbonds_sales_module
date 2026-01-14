@@ -88,5 +88,27 @@
                 </form>
             </field>
         </record>
+
+        <!-- ============== TREE VIEW: sale.quotations ========================================================= -->
+        <record id="sale_quotations_view_tree" model="ir.ui.view">
+            <field name="name">sale.quotations.tree</field>
+            <field name="model">sale.quotations</field>
+            <field name="arch" type="xml">
+                <tree string="Contracts">
+                    <field name="name" string="Contract" readonly="1" decoration-bf="1"/>
+                    <field name="partner_id" string="Cliente" readonly="1" decoration-bf="1"/>
+                    <field name="sale_order_sale_ids" widget="Many2Many_tags" readonly="1"/>
+                </tree>
+            </field>
+        </record> <!-- =============================== SEARCH VIEW: sale.quotations ========================================================= -->
+        <record id="sale_quotations_view_search" model="ir.ui.view">
+            <field name="name">sale.quotations.search</field>
+            <field name="model">sale.quotations</field>
+            <field name="arch" type="xml">
+                <search string="Search Sales Order">
+                    <field name="name"/>
+                </search>
+            </field>
+        </record>
     </data>
 </odoo>
