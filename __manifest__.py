@@ -13,6 +13,8 @@
         "security/ir.model.access.csv",
         "data/folders.xml",
         "data/automation.xml",
+        'views/sale_quotations_views.xml',
+        'views/sale_quotations_action_menu.xml',
         "views/bonds_views.xml",
     ],
     'installable' : True,
