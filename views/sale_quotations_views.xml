@@ -14,8 +14,8 @@
                         <group>
                             <group>
                                 <field name="name" string="Contrato/Pedido"/>
-                                <field name="parent_id" string="Principal"/>
-                                <field name="child_ids" string="Adendas" readonly="1"/>
+                                <field name="parent_id"  attrs="{'invisible': [('child_ids', '!=' ,False)]}" string="Principal"/>
+                                <field name="child_ids" attrs="{'invisible': [('parent_id', '!=' ,False)]}"  string="Adendas" readonly="1"/>
 
                                 <!-- Presupuestos / Pedidos enlazados -->
                                 <field name="sale_order_sale_ids"
@@ -26,7 +26,7 @@
                                        attrs="{}"
                                        readonly="1">
                                     <tree string="Presupuestos" create="0">
-                                        <field name="opportunity_id"/>
+                                        <field name="quotations_id"/>
                                         <field name="name"/>
                                         <field name="partner_id"/>
                                         <field name="amount_untaxed" optional="show"/>
