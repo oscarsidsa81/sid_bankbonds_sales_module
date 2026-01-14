@@ -7,7 +7,7 @@
     "website": "https://sid-sa.com",
     "category": "Accounting/Finance",
     "license": "AGPL-3",
-    "depends": ["base", "mail", "account", "sale","documents","oct_sale_extra_fields"],  # sale por sale.order; account por account.journal
+    "depends": ["base", "mail", "purchase", "account", "sale","documents","oct_sale_extra_fields"],  # sale por sale.order; account por account.journal
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",

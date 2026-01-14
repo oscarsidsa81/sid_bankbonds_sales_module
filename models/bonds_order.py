@@ -340,19 +340,20 @@ class BondsOrder ( models.Model ) :
         return super ().unlink ()
 
 
-class SaleQuotationsBonds ( models.Model ) :
+class SaleQuotationsBonds(models.Model):
     _inherit = ["sale.quotations", "mail.thread", "mail.activity.mixin"]
     _description = "Contratos/Pedidos"
-    _parent_store = True  # activa parent_path
+    _parent_store = True  # activa parent_path (solo si tienes parent_path en el modelo)
+    _parent_name = "parent_id"
 
-    parent_id = fields.Many2one (
+    parent_id = fields.Many2one(
         comodel_name="sale.quotations",
         string="Contrato Principal",
         index=True,
         ondelete="restrict",
     )
 
-    child_ids = fields.One2many (
+    child_ids = fields.One2many(
         comodel_name="sale.quotations",
         inverse_name="parent_id",
         string="Adendas",
