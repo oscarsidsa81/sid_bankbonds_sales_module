@@ -452,3 +452,89 @@ class SaleQuotationsBonds ( models.Model ) :
                     )
                 else:
                     _logger.warning("%s", msg)
+
+    # --- Smart button counters ---
+    child_count = fields.Integer(string="Adendas", compute="_compute_smart_counts")
+    sale_order_count = fields.Integer(string="Sale Orders", compute="_compute_smart_counts")
+    bond_count = fields.Integer(string="Avales", compute="_compute_smart_counts")
+    purchase_count = fields.Integer(string="Compras", compute="_compute_smart_counts")
+
+    @api.depends("child_ids", "sale_order_sale_ids", "bond_ids")
+    def _compute_smart_counts(self):
+        for rec in self:
+            rec.child_count = len(rec.child_ids)
+            rec.sale_order_count = len(rec.sale_order_sale_ids)
+            rec.bond_count = len(rec.bond_ids)
+            rec.purchase_count = rec._get_purchase_orders().sudo().search_count(
+                rec._get_purchase_domain()
+            )
+
+    # --- Helpers for purchases ---
+    def _get_procurement_groups(self):
+        """Return procurement groups from linked sale orders."""
+        self.ensure_one()
+        sale_orders = self.sale_order_sale_ids
+
+        # Depending on Odoo version/custom, sale order can use group_id or procurement_group_id
+        groups = sale_orders.mapped("procurement_group_id")
+        return groups.filtered(lambda g: g)
+
+    def _get_purchase_domain(self):
+        """Domain for purchase orders linked to the procurement groups of linked sale orders."""
+        self.ensure_one()
+        groups = self._get_procurement_groups()
+        if not groups:
+            return [("id", "=", 0)]
+        # purchase.order usually has group_id
+        return [("procurement_group_id", "in", groups.ids)]
+
+    def _get_purchase_orders(self):
+        return self.env["purchase.order"]
+
+    # --- Smart button actions ---
+    def action_view_children(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Adendas",
+            "res_model": "sale.quotations",
+            "view_mode": "tree,form",
+            "domain": [("id", "in", self.child_ids.ids)],
+            "context": {"default_parent_id": self.id},
+        }
+
+    def action_view_sale_orders(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Sale Orders",
+            "res_model": "sale.order",
+            "view_mode": "tree,form",
+            "domain": [("id", "in", self.sale_order_sale_ids.ids)],
+            "context": {},
+        }
+
+    def action_view_bonds(self):
+        self.ensure_one()
+        # Ajusta el modelo si no es "bond.bond"
+        bond_model = self.bond_ids._name or "bond.bond"
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Avales",
+            "res_model": bond_model,
+            "view_mode": "tree,form",
+            "domain": [("id", "in", self.bond_ids.ids)],
+            "context": {},
+        }
+
+    def action_view_purchases(self):
+        self.ensure_one()
+        domain = self._get_purchase_domain()
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Compras",
+            "res_model": "purchase.order",
+            "view_mode": "tree,form",
+            "domain": domain,
+            "context": {},
+        }

@@ -11,11 +11,63 @@
             <field name="arch" type="xml">
                 <form string="Contrato/Pedido">
                     <sheet>
+                        <field name="child_count" invisible="1"/>
+                        <field name="sale_order_count" invisible="1"/>
+                        <field name="bond_count" invisible="1"/>
+                        <field name="purchase_count" invisible="1"/>
                         <group>
+                            <div class="oe_button_box" name="button_box">
+
+                                <button type="object"
+                                        name="action_view_children"
+                                        class="oe_stat_button"
+                                        icon="fa-sitemap"
+                                        attrs="{'invisible': [('child_count', '=', 0)]}">
+                                    <field name="child_count" widget="statinfo" string="Adendas"/>
+                                </button>
+
+                                <button type="object"
+                                        name="action_view_sale_orders"
+                                        class="oe_stat_button"
+                                        icon="fa-shopping-cart"
+                                        attrs="{'invisible': [('sale_order_count', '=', 0)]}">
+                                    <field name="sale_order_count" widget="statinfo" string="Sale Orders"/>
+                                </button>
+
+                                <button type="object"
+                                        name="action_view_bonds"
+                                        class="oe_stat_button"
+                                        icon="fa-shield"
+                                        attrs="{'invisible': [('bond_count', '=', 0)]}">
+                                    <field name="bond_count" widget="statinfo" string="Avales"/>
+                                </button>
+
+                                <button type="object"
+                                        name="action_view_purchases"
+                                        class="oe_stat_button"
+                                        icon="fa-truck"
+                                        attrs="{'invisible': [('purchase_count', '=', 0)]}">
+                                    <field name="purchase_count" widget="statinfo" string="Compras"/>
+                                </button>
+
+                            </div>
+
+                            <group>
+                                <group>
+                                    <field name="name" string="Contrato/Pedido"/>
+                                    <field name="parent_id" attrs="{'invisible': [('child_ids', '!=', False)]}"
+                                           string="Principal"/>
+                                    <field name="child_ids" attrs="{'invisible': [('parent_id', '!=', False)]}"
+                                           string="Adendas" readonly="1"/>
+                                    ...
+                                </group>
+                            </group>
                             <group>
                                 <field name="name" string="Contrato/Pedido"/>
-                                <field name="parent_id"  attrs="{'invisible': [('child_ids', '!=' ,False)]}" string="Principal"/>
-                                <field name="child_ids" attrs="{'invisible': [('parent_id', '!=' ,False)]}"  string="Adendas" readonly="1"/>
+                                <field name="parent_id" attrs="{'invisible': [('child_ids', '!=' ,False)]}"
+                                       string="Principal"/>
+                                <field name="child_ids" attrs="{'invisible': [('parent_id', '!=' ,False)]}"
+                                       string="Adendas" readonly="1"/>
 
                                 <!-- Presupuestos / Pedidos enlazados -->
                                 <field name="sale_order_sale_ids"
