@@ -550,3 +550,59 @@ class SaleQuotationsBonds(models.Model):
             "domain": domain,
             "context": {},
         }
+
+    def _get_effective_partner_from_sale_orders(self):
+        """Devuelve el partner del pedido confirmado más reciente (state='sale')."""
+        self.ensure_one()
+        so = self.sale_order_ids.filtered(lambda s: s.state == "sale")
+        if not so:
+            return self.env["res.partner"]  # vacío
+        so_latest = so.sorted(lambda s: s.date_order or fields.Datetime.now(), reverse=True)[:1]
+        return so_latest.partner_id
+
+    @api.constrains("parent_id", "child_ids")
+    def _check_parent_child_same_partner(self):
+        for rec in self:
+            rec_partner = rec._get_effective_partner_from_sale_orders()
+
+            # --- Regla 1: si es adenda (tiene parent), el parent debe tener mismo cliente ---
+            if rec.parent_id:
+                parent_partner = rec.parent_id._get_effective_partner_from_sale_orders()
+
+                # Si ambos tienen partner “resuelto” y no coincide -> bloquear
+                if rec_partner and parent_partner and rec_partner.id != parent_partner.id:
+                    raise ValidationError(_(
+                        "No puedes vincular esta adenda a un contrato principal con cliente distinto.\n\n"
+                        "Cliente (adenda): %(c1)s\nCliente (principal): %(c2)s"
+                    ) % {
+                        "c1": rec_partner.display_name,
+                        "c2": parent_partner.display_name,
+                    })
+
+            # --- Regla 2: si es principal (tiene children), todos deben tener mismo cliente ---
+            if rec.child_ids:
+                for child in rec.child_ids:
+                    child_partner = child._get_effective_partner_from_sale_orders()
+                    if rec_partner and child_partner and rec_partner.id != child_partner.id:
+                        raise ValidationError(_(
+                            "No puedes añadir una adenda con cliente distinto al del contrato principal.\n\n"
+                            "Cliente (principal): %(c1)s\nCliente (adenda): %(c2)s\nAdenda: %(child)s"
+                        ) % {
+                            "c1": rec_partner.display_name,
+                            "c2": child_partner.display_name,
+                            "child": child.display_name,
+                        })
+
+            # --- (Opcional) Modelo estricto a 2 niveles ---
+            # Si quieres prohibir “adenda con hijos”:
+            if rec.parent_id and rec.child_ids:
+                raise ValidationError(_(
+                    "Una adenda no puede tener a su vez adendas. "
+                    "Quita el contrato principal o las adendas antes de continuar."
+                ))
+
+            # Si quieres prohibir “principal que a la vez sea adenda”:
+            if rec.child_ids and rec.parent_id:
+                raise ValidationError(_(
+                    "Un contrato con adendas no puede tener contrato principal (parent_id)."
+                ))
