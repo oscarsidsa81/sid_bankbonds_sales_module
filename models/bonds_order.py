@@ -94,34 +94,30 @@ class BondsOrder ( models.Model ) :
         tracking=True,
     )
 
-    aval_type = fields.Selection ( selection="_selection_aval_type",
-                                   string="Tipo de aval",
-                                   required=True,
-                                   tracking=True,
-                                   )
-
     description = fields.Text ( string="Descripción / Notas" )
 
-    @api.model
-    def _selection_aval_type(self) :
-        # Opciones vigentes (SIN fiel_gar)
-        sel = [
+    aval_type = fields.Selection (
+        selection=[
             ("prov", "Provisional"),
             ("adel", "Adelanto"),
             ("fiel", "Fiel Cumplimiento"),
             ("gar", "Garantía"),
-        ]
+            ('fiel_gar', 'Fiel garantía'),
+        ],
+        string="Tipo de aval",
+        required=True,
+        tracking=True,
+    )
 
-        # Solo mostramos fiel_gar si estamos abriendo un registro que YA lo tiene
-        active_id = self.env.context.get ( 'active_id' )
-        if active_id :
-            rec = self.browse ( active_id ).exists ()
-            if rec and rec.aval_type == 'fiel_gar' :
-                sel = [('fiel_gar', 'Fiel garantía')] + sel
-
-        return sel
-
-
+    @api.model
+    def fields_get(self, allfields=None, attributes=None):
+        res = super().fields_get(allfields=allfields, attributes=attributes)
+        if 'aval_type' in res:
+            # Si estamos creando (no hay active_id), ocultamos fiel_gar del desplegable
+            if not self.env.context.get('active_id'):
+                sel = res['aval_type'].get('selection', [])
+                res['aval_type']['selection'] = [s for s in sel if s[0] != 'fiel_gar']
+        return res
 
     def write(self, vals) :
         # 1) Guardamos el valor anterior (calculado) antes del write
