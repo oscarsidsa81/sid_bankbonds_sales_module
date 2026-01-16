@@ -371,15 +371,6 @@ class SaleQuotationsBonds(models.Model):
         tracking=True,
         store=True )
 
-    # # TODO aquí es posible que necesitemos Many2many, al final puede haber
-    #
-    # bond_id = fields.Many2one(
-    #     comodel_name="sid_bonds_orders",
-    #     string="Aval",
-    #     ondelete="set null",
-    #     index=True,
-    # )
-
     # # varios avales para un solo contrato o varios
     bond_ids = fields.Many2many (
         comodel_name="sid_bonds_orders",
