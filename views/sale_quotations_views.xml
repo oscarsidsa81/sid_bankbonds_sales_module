@@ -51,10 +51,10 @@
                                        string="Adendas"
                                        readonly="1"
                                        attrs="{'invisible': [('parent_id','!=',False)]}">
-                                            <tree string="Contratos">
-                                                <field name="name" string="Adendas" readonly="1" decoration-bf="1"/>
-                                            </tree>
-                                <field/>
+                                    <tree string="Contratos">
+                                        <field name="name" string="Adendas" readonly="1" decoration-bf="1"/>
+                                    </tree>
+                                </field>
 
                             </group>
                         </group>
