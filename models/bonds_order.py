@@ -3,6 +3,7 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger ( __name__ )
 
@@ -102,7 +103,7 @@ class BondsOrder ( models.Model ) :
             ("adel", "Adelanto"),
             ("fiel", "Fiel Cumplimiento"),
             ("gar", "Garantía"),
-            ('fiel_gar', 'Fiel garantía'),
+            ('fiel_gar', 'Fiel cumplimiento y Garantía'),
         ],
         string="Tipo de aval",
         required=True,
