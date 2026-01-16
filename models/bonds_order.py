@@ -109,34 +109,36 @@ class BondsOrder ( models.Model ) :
         tracking=True,
     )
 
-    @api.model
-    def fields_get(self, allfields=None, attributes=None):
-        res = super().fields_get(allfields=allfields, attributes=attributes)
-        if 'aval_type' in res:
-            # Si estamos creando (no hay active_id), ocultamos fiel_gar del desplegable
-            if not self.env.context.get('active_id'):
-                sel = res['aval_type'].get('selection', [])
-                res['aval_type']['selection'] = [s for s in sel if s[0] != 'fiel_gar']
-        return res
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("aval_type") == "fiel_gar":
+                raise ValidationError(_("No se permite usar 'Fiel garantía' en registros nuevos."))
+        return super().create(vals_list)
 
-    def write(self, vals) :
+
+    def write(self, vals):
+        # 0) Bloqueo: no permitir asignar "fiel_gar"
+        # (OJO: esto impide cambiarlo A fiel_gar, pero NO impide que registros antiguos lo mantengan)
+        if vals.get("aval_type") == "fiel_gar":
+            raise ValidationError(_("No se permite asignar 'Fiel garantía'."))
+
         # 1) Guardamos el valor anterior (calculado) antes del write
         # OJO: base_pedidos es compute store=False => se calcula al acceder
-        old_map = {b.id : b.base_pedidos for b in self}
+        old_map = {b.id: b.base_pedidos for b in self}
 
-        # 2) write normal (y tu lógica de name/reference si la mantienes)
-        if "reference" in vals and vals.get ( "reference" ) :
-            vals = dict ( vals )
+        # 2) Tu lógica de reference -> name (si viene reference en vals)
+        if vals.get("reference"):
+            vals = dict(vals)  # evitamos mutar el dict original
             vals["name"] = vals["reference"]
 
-        res = super ().write ( vals )
+        # 3) write normal
+        res = super().write(vals)
 
-        # 3) Si el write afecta a algo que pueda cambiar la base, evaluamos después
-        # Esto evita spam si editas campos no relacionados.
-        triggers = {"contract_ids", "base_pedidos",
-                    "partner_id"}  # si quieres, añade aquí otras cosas
-        if triggers.intersection ( vals.keys () ) :
-            self._post_base_pedidos_variation_note ( old_map )
+        # 4) Post-proceso si el write tocó algo relevante
+        triggers = {"contract_ids", "base_pedidos", "partner_id"}  # añade aquí otros si aplica
+        if triggers.intersection(vals.keys()):
+            self._post_base_pedidos_variation_note(old_map)
 
         return res
 
