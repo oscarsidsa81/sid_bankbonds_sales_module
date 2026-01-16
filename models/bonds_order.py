@@ -103,26 +103,35 @@ class BondsOrder ( models.Model ) :
             ("adel", "Adelanto"),
             ("fiel", "Fiel Cumplimiento"),
             ("gar", "Garantía"),
-            ('fiel_gar', 'Fiel cumplimiento y Garantía'),
         ],
         string="Tipo de aval",
+        compute="_compute_aval_type_display",
         required=True,
         tracking=True,
     )
+
+    @api.depends("aval_type")
+    def _compute_aval_type_display(self):
+        labels = dict(self._fields["aval_type"].selection)
+        for rec in self:
+            # Si en BD viene el legacy 'fiel_gar', lo mostramos con etiqueta fija
+            if rec.aval_type == "fiel_gar":
+                rec.aval_type_display = "Fiel garantía"
+            else:
+                rec.aval_type_display = labels.get(rec.aval_type, "")
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("aval_type") == "fiel_gar":
-                raise ValidationError(_("No se permite usar 'Fiel garantía' en registros nuevos."))
+                raise ValidationError(_("No se permite crear registros con 'Fiel garantía'."))
         return super().create(vals_list)
-
 
     def write(self, vals):
         # 0) Bloqueo: no permitir asignar "fiel_gar"
         # (OJO: esto impide cambiarlo A fiel_gar, pero NO impide que registros antiguos lo mantengan)
         if vals.get("aval_type") == "fiel_gar":
-            raise ValidationError(_("No se permite asignar 'Fiel garantía'."))
+            raise ValidationError(_("No se permite asignar 'Fiel cumplimiento y Garantía'."))
 
         # 1) Guardamos el valor anterior (calculado) antes del write
         # OJO: base_pedidos es compute store=False => se calcula al acceder
