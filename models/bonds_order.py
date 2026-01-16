@@ -121,11 +121,12 @@ class BondsOrder ( models.Model ) :
                 rec.aval_type_display = labels.get(rec.aval_type, "")
 
     @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if vals.get("aval_type") == "fiel_gar":
-                raise ValidationError(_("No se permite crear registros con 'Fiel garantía'."))
-        return super().create(vals_list)
+    def create(self, vals_list) :
+        for vals in vals_list :
+            if vals.get ( "aval_type" ) == "fiel_gar" :
+                raise ValidationError (
+                    _ ( "No se permite crear registros con 'Fiel garantía'." ) )
+        return super ().create ( vals_list )
 
     def write(self, vals):
         # 0) Bloqueo: no permitir asignar "fiel_gar"
