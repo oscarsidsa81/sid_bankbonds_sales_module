@@ -96,6 +96,7 @@ class BondsOrder ( models.Model ) :
 
     aval_type = fields.Selection ( selection="_selection_aval_type",
                                    string="Tipo de aval",
+                                   required=True,
                                    tracking=True,
                                    )
 
