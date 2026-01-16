@@ -10,6 +10,7 @@
     "depends": ["base", "mail", "purchase", "account", "sale","documents","oct_sale_extra_fields"],  # sale por sale.order; account por account.journal
     "data": [
         "security/security.xml",
+        "security/ir_rule.xml",
         "security/ir.model.access.csv",
         "data/folders.xml",
         "data/automation.xml",
