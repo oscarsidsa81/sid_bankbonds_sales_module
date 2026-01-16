@@ -110,6 +110,12 @@ class BondsOrder ( models.Model ) :
         tracking=True,
     )
 
+    aval_type_display = fields.Char(
+        string="Tipo de aval",
+        compute="_compute_aval_type_display",
+        store=False,
+    )
+
     @api.depends("aval_type")
     def _compute_aval_type_display(self):
         labels = dict(self._fields["aval_type"].selection)
