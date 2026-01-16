@@ -4,7 +4,8 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-_logger = logging.getLogger(__name__)
+_logger = logging.getLogger ( __name__ )
+
 
 class BondsOrder ( models.Model ) :
     _name = "sid_bonds_orders"
@@ -93,19 +94,33 @@ class BondsOrder ( models.Model ) :
         tracking=True,
     )
 
-    aval_type = fields.Selection (
-        [
+    aval_type = fields.Selection ( selection="_selection_aval_type",
+                                   string="Tipo de aval",
+                                   tracking=True,
+                                   )
+
+    description = fields.Text ( string="Descripción / Notas" )
+
+    @api.model
+    def _selection_aval_type(self) :
+        # Opciones vigentes (SIN fiel_gar)
+        sel = [
             ("prov", "Provisional"),
             ("adel", "Adelanto"),
             ("fiel", "Fiel Cumplimiento"),
             ("gar", "Garantía"),
-            ("fiel_gar", "Fiel Cumplimiento y Garantía"),
-        ],
-        string="Tipo",
-        tracking=True,
-    )
+        ]
 
-    description = fields.Text ( string="Descripción / Notas" )
+        # Solo mostramos fiel_gar si estamos abriendo un registro que YA lo tiene
+        active_id = self.env.context.get ( 'active_id' )
+        if active_id :
+            rec = self.browse ( active_id ).exists ()
+            if rec and rec.aval_type == 'fiel_gar' :
+                sel = [('fiel_gar', 'Fiel garantía')] + sel
+
+        return sel
+
+
 
     def write(self, vals) :
         # 1) Guardamos el valor anterior (calculado) antes del write
@@ -341,9 +356,7 @@ class BondsOrder ( models.Model ) :
         return super ().unlink ()
 
 
-
-
-class SaleQuotationsBonds(models.Model):
+class SaleQuotationsBonds ( models.Model ) :
     _name = "sale.quotations"
     _inherit = ["sale.quotations", "mail.thread", "mail.activity.mixin"]
     _parent_store = True  # activa parent_path (solo si tienes parent_path en el modelo)
@@ -362,7 +375,7 @@ class SaleQuotationsBonds(models.Model):
         string="Adendas",
     )
 
-    parent_path = fields.Char(index=True)
+    parent_path = fields.Char ( index=True )
 
     partner_id = fields.Many2one (
         "res.partner",
@@ -397,12 +410,12 @@ class SaleQuotationsBonds(models.Model):
         readonly=True,
     )
 
-    @api.constrains("parent_id", "child_ids")
-    def _check_parent_child_exclusive(self):
-        for rec in self:
-            if rec.parent_id and rec.child_ids:
-                raise ValidationError(
-                    _("Un contrato no puede tener 'Principal' y 'Adendas' a la vez.")
+    @api.constrains ( "parent_id", "child_ids" )
+    def _check_parent_child_exclusive(self) :
+        for rec in self :
+            if rec.parent_id and rec.child_ids :
+                raise ValidationError (
+                    _ ( "Un contrato no puede tener 'Principal' y 'Adendas' a la vez." )
                 )
 
     @api.depends (
@@ -420,139 +433,148 @@ class SaleQuotationsBonds(models.Model):
                 lambda so : so.state == "sale" )
             rec.sale_order_sale_ids = orders
 
-    @api.depends(
+    @api.depends (
         "sale_order_sale_ids",
         "sale_order_sale_ids.partner_id",
         "sale_order_sale_ids.date_order",
     )
+    def _compute_sale_partner_id(self) :
+        for rec in self :
+            partners = rec.sale_order_sale_ids.mapped (
+                "partner_id" ).filtered ( lambda p : p )
 
-    def _compute_sale_partner_id(self):
-        for rec in self:
-            partners = rec.sale_order_sale_ids.mapped("partner_id").filtered(lambda p: p)
-
-            if not partners:
+            if not partners :
                 rec.partner_id = False
                 continue
 
             # Elegimos el partner del pedido confirmado más reciente
             # (si date_order es False, lo empujamos “hacia atrás” con un fallback mínimo)
-            def _key(so):
-                return so.date_order or fields.Datetime.from_string("1970-01-01 00:00:00")
+            def _key(so) :
+                return so.date_order or fields.Datetime.from_string (
+                    "1970-01-01 00:00:00" )
 
-            so_latest = rec.sale_order_sale_ids.sorted(key=_key, reverse=True)[:1]
+            so_latest = rec.sale_order_sale_ids.sorted ( key=_key,
+                                                         reverse=True )[:1]
             # so_latest es un recordset de 0/1
             rec.partner_id = so_latest.partner_id.id if so_latest else False
 
             # Aviso NO bloqueante si hay más de un cliente
-            if len(partners) > 1 and rec.partner_id:
-                msg = _(
+            if len ( partners ) > 1 and rec.partner_id :
+                msg = _ (
                     "Atención: hay múltiples clientes en pedidos confirmados (%s). "
                     "Se ha fijado el cliente del pedido más reciente (%s)."
-                ) % (", ".join(partners.mapped("display_name")), rec.partner_id.display_name)
+                ) % (", ".join ( partners.mapped ( "display_name" ) ),
+                     rec.partner_id.display_name)
 
                 # Si el modelo tiene chatter:
-                if hasattr(rec, "message_post"):
-                    rec.message_post(
+                if hasattr ( rec, "message_post" ) :
+                    rec.message_post (
                         body=msg,
                         message_type="comment",
                         subtype_xmlid="mail.mt_note",
                     )
-                else:
-                    _logger.warning("%s", msg)
+                else :
+                    _logger.warning ( "%s", msg )
 
     # --- Smart button counters ---
-    child_count = fields.Integer(string="Adendas", compute="_compute_smart_counts")
-    sale_order_count = fields.Integer(string="Sale Orders", compute="_compute_smart_counts")
-    bond_count = fields.Integer(string="Avales", compute="_compute_smart_counts")
-    purchase_count = fields.Integer(string="Compras", compute="_compute_smart_counts")
+    child_count = fields.Integer ( string="Adendas",
+                                   compute="_compute_smart_counts" )
+    sale_order_count = fields.Integer ( string="Sale Orders",
+                                        compute="_compute_smart_counts" )
+    bond_count = fields.Integer ( string="Avales",
+                                  compute="_compute_smart_counts" )
+    purchase_count = fields.Integer ( string="Compras",
+                                      compute="_compute_smart_counts" )
 
-    @api.depends("child_ids", "sale_order_sale_ids", "bond_ids")
-    def _compute_smart_counts(self):
-        for rec in self:
-            rec.child_count = len(rec.child_ids)
-            rec.sale_order_count = len(rec.sale_order_sale_ids)
-            rec.bond_count = len(rec.bond_ids)
-            rec.purchase_count = rec._get_purchase_orders().sudo().search_count(
-                rec._get_purchase_domain()
+    @api.depends ( "child_ids", "sale_order_sale_ids", "bond_ids" )
+    def _compute_smart_counts(self) :
+        for rec in self :
+            rec.child_count = len ( rec.child_ids )
+            rec.sale_order_count = len ( rec.sale_order_sale_ids )
+            rec.bond_count = len ( rec.bond_ids )
+            rec.purchase_count = rec._get_purchase_orders ().sudo ().search_count (
+                rec._get_purchase_domain ()
             )
 
     # --- Helpers for purchases ---
-    def _get_procurement_groups(self):
+    def _get_procurement_groups(self) :
         """Return procurement groups from linked sale orders."""
-        self.ensure_one()
+        self.ensure_one ()
         sale_orders = self.sale_order_sale_ids
 
         # Depending on Odoo version/custom, sale order can use group_id or procurement_group_id
-        groups = sale_orders.mapped("procurement_group_id")
-        return groups.filtered(lambda g: g)
+        groups = sale_orders.mapped ( "procurement_group_id" )
+        return groups.filtered ( lambda g : g )
 
-    def _get_purchase_domain(self):
+    def _get_purchase_domain(self) :
         """Domain for purchase orders linked to the procurement groups of linked sale orders."""
-        self.ensure_one()
-        groups = self._get_procurement_groups()
-        if not groups:
+        self.ensure_one ()
+        groups = self._get_procurement_groups ()
+        if not groups :
             return [("id", "=", 0)]
         # purchase.order usually has group_id
         return [("group_id", "in", groups.ids)]
 
-    def _get_purchase_orders(self):
+    def _get_purchase_orders(self) :
         return self.env["purchase.order"]
 
     # --- Smart button actions ---
-    def action_view_children(self):
-        self.ensure_one()
+    def action_view_children(self) :
+        self.ensure_one ()
         return {
-            "type": "ir.actions.act_window",
-            "name": "Adendas",
-            "res_model": "sale.quotations",
-            "view_mode": "tree,form",
-            "domain": [("id", "in", self.child_ids.ids)],
-            "context": {"default_parent_id": self.id},
+            "type" : "ir.actions.act_window",
+            "name" : "Adendas",
+            "res_model" : "sale.quotations",
+            "view_mode" : "tree,form",
+            "domain" : [("id", "in", self.child_ids.ids)],
+            "context" : {"default_parent_id" : self.id},
         }
 
-    def action_view_sale_orders(self):
-        self.ensure_one()
+    def action_view_sale_orders(self) :
+        self.ensure_one ()
         return {
-            "type": "ir.actions.act_window",
-            "name": "Sale Orders",
-            "res_model": "sale.order",
-            "view_mode": "tree,form",
-            "domain": [("id", "in", self.sale_order_sale_ids.ids)],
-            "context": {},
+            "type" : "ir.actions.act_window",
+            "name" : "Sale Orders",
+            "res_model" : "sale.order",
+            "view_mode" : "tree,form",
+            "domain" : [("id", "in", self.sale_order_sale_ids.ids)],
+            "context" : {},
         }
 
-    def action_view_bonds(self):
-        self.ensure_one()
+    def action_view_bonds(self) :
+        self.ensure_one ()
         # Ajusta el modelo si no es "bond.bond"
         bond_model = self.bond_ids._name or "bond.bond"
         return {
-            "type": "ir.actions.act_window",
-            "name": "Avales",
-            "res_model": bond_model,
-            "view_mode": "tree,form",
-            "domain": [("id", "in", self.bond_ids.ids)],
-            "context": {},
+            "type" : "ir.actions.act_window",
+            "name" : "Avales",
+            "res_model" : bond_model,
+            "view_mode" : "tree,form",
+            "domain" : [("id", "in", self.bond_ids.ids)],
+            "context" : {},
         }
 
-    def action_view_purchases(self):
-        self.ensure_one()
-        domain = self._get_purchase_domain()
+    def action_view_purchases(self) :
+        self.ensure_one ()
+        domain = self._get_purchase_domain ()
         return {
-            "type": "ir.actions.act_window",
-            "name": "Compras",
-            "res_model": "purchase.order",
-            "view_mode": "tree,form",
-            "domain": domain,
-            "context": {},
+            "type" : "ir.actions.act_window",
+            "name" : "Compras",
+            "res_model" : "purchase.order",
+            "view_mode" : "tree,form",
+            "domain" : domain,
+            "context" : {},
         }
 
-    def _get_effective_partner_from_sale_orders(self):
+    def _get_effective_partner_from_sale_orders(self) :
         """Devuelve el partner del pedido confirmado más reciente (state='sale')."""
-        self.ensure_one()
-        so = self.sale_order_ids.filtered(lambda s: s.state == "sale")
-        if not so:
+        self.ensure_one ()
+        so = self.sale_order_ids.filtered ( lambda s : s.state == "sale" )
+        if not so :
             return self.env["res.partner"]  # vacío
-        so_latest = so.sorted(lambda s: s.date_order or fields.Datetime.now(), reverse=True)[:1]
+        so_latest = so.sorted (
+            lambda s : s.date_order or fields.Datetime.now (), reverse=True )[
+            :1]
         return so_latest.partner_id
 
     def _get_family_quotations(self) :
@@ -579,50 +601,49 @@ class SaleQuotationsBonds(models.Model):
         # 3) Caso normal (guardado): SQL con child_of (rápido y completo)
         return self.search ( [("id", "child_of", root.id)] )
 
-    @api.constrains("parent_id", "child_ids")
-    def _check_parent_child_same_partner(self):
-        for rec in self:
-            rec_partner = rec._get_effective_partner_from_sale_orders()
+    @api.constrains ( "parent_id", "child_ids" )
+    def _check_parent_child_same_partner(self) :
+        for rec in self :
+            rec_partner = rec._get_effective_partner_from_sale_orders ()
 
             # --- Regla 1: si es adenda (tiene parent), el parent debe tener mismo cliente ---
-            if rec.parent_id:
-                parent_partner = rec.parent_id._get_effective_partner_from_sale_orders()
+            if rec.parent_id :
+                parent_partner = rec.parent_id._get_effective_partner_from_sale_orders ()
 
                 # Si ambos tienen partner “resuelto” y no coincide -> bloquear
-                if rec_partner and parent_partner and rec_partner.id != parent_partner.id:
-                    raise ValidationError(_(
+                if rec_partner and parent_partner and rec_partner.id != parent_partner.id :
+                    raise ValidationError ( _ (
                         "No puedes vincular esta adenda a un contrato principal con cliente distinto.\n\n"
                         "Cliente (adenda): %(c1)s\nCliente (principal): %(c2)s"
                     ) % {
-                        "c1": rec_partner.display_name,
-                        "c2": parent_partner.display_name,
-                    })
+                                                "c1" : rec_partner.display_name,
+                                                "c2" : parent_partner.display_name,
+                                            } )
 
             # --- Regla 2: si es principal (tiene children), todos deben tener mismo cliente ---
-            if rec.child_ids:
-                for child in rec.child_ids:
-                    child_partner = child._get_effective_partner_from_sale_orders()
-                    if rec_partner and child_partner and rec_partner.id != child_partner.id:
-                        raise ValidationError(_(
+            if rec.child_ids :
+                for child in rec.child_ids :
+                    child_partner = child._get_effective_partner_from_sale_orders ()
+                    if rec_partner and child_partner and rec_partner.id != child_partner.id :
+                        raise ValidationError ( _ (
                             "No puedes añadir una adenda con cliente distinto al del contrato principal.\n\n"
                             "Cliente (principal): %(c1)s\nCliente (adenda): %(c2)s\nAdenda: %(child)s"
                         ) % {
-                            "c1": rec_partner.display_name,
-                            "c2": child_partner.display_name,
-                            "child": child.display_name,
-                        })
+                                                    "c1" : rec_partner.display_name,
+                                                    "c2" : child_partner.display_name,
+                                                    "child" : child.display_name,
+                                                } )
 
             # --- (Opcional) Modelo estricto a 2 niveles ---
             # Si quieres prohibir “adenda con hijos”:
-            if rec.parent_id and rec.child_ids:
-                raise ValidationError(_(
+            if rec.parent_id and rec.child_ids :
+                raise ValidationError ( _ (
                     "Una adenda no puede tener a su vez adendas. "
                     "Quita el contrato principal o las adendas antes de continuar."
-                ))
+                ) )
 
             # Si quieres prohibir “principal que a la vez sea adenda”:
-            if rec.child_ids and rec.parent_id:
-                raise ValidationError(_(
+            if rec.child_ids and rec.parent_id :
+                raise ValidationError ( _ (
                     "Un contrato con adendas no puede tener contrato principal (parent_id)."
-                ))
-
+                ) )
