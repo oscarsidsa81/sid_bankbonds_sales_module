@@ -21,4 +21,7 @@
     'installable' : True,
     'auto_install' : False,
     'application' : False,
+
+    # Migración automática desde el modelo Studio (si existe): x_bonds.orders
+    'post_init_hook': 'post_init_migrate_from_studio',
 }

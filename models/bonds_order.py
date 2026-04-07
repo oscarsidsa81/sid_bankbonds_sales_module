@@ -2,7 +2,7 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -65,13 +65,29 @@ class BondsOrder ( models.Model ) :
         string="Base Imponible Pedidos",
         currency_field="currency_id",
         compute="_compute_base_pedidos",
-        store=False,
-        readonly=True,
+        store=True,
+        # No lo hagas editable en vistas, pero permitimos write interno para tracking/avisos.
+        readonly=False,
         copy=True,
         tracking=True,
     )
 
     pdf_aval = fields.Binary ( string="PDF Aval", attachment=True, store=True )
+
+    variation_threshold_pct = fields.Float(
+        string="Umbral de variación (%)",
+        default=3.0,
+        tracking=True,
+        help="Porcentaje mínimo de variación en Base Imponible Pedidos para publicar aviso y crear actividad.",
+    )
+
+    legacy_x_bonds_id = fields.Integer(
+        string="Legacy x_bonds.orders ID",
+        index=True,
+        readonly=True,
+        copy=False,
+        help="ID del registro origen (modelo Studio x_bonds.orders), para migración idempotente.",
+    )
 
     state = fields.Selection (
         [
@@ -209,7 +225,8 @@ class BondsOrder ( models.Model ) :
                 changed = (new != 0.0)
             else :
                 pct = abs ( new - old ) / abs ( old ) * 100.0
-                changed = pct > 3.0
+                threshold = float(bond.variation_threshold_pct or 3.0)
+                changed = pct > threshold
 
             if not changed :
                 continue
@@ -222,14 +239,17 @@ class BondsOrder ( models.Model ) :
                     for p in partners
                 )
 
+            threshold = float(bond.variation_threshold_pct or 3.0)
+
             body = _ (
-                "<p><b>Variación en Base Imponible Pedidos</b> (&gt; 3%%)</p>"
+                "<p><b>Variación en Base Imponible Pedidos</b> (&gt; %(thr).2f%%)</p>"
                 "<p>Anterior: %(old)s<br/>Nuevo: %(new)s<br/>Cambio: %(pct).2f%%</p>"
                 "%(mentions)s"
             ) % {
                        "old" : old,
                        "new" : new,
                        "pct" : pct,
+                       "thr": threshold,
                        "mentions" : f"<p>{mentions_html}</p>" if mentions_html else "",
                    }
 
@@ -269,14 +289,18 @@ class BondsOrder ( models.Model ) :
     def _compute_base_pedidos(self) :
         for bond in self :
             if not bond.contract_ids or not bond.partner_id :
-                bond.base_pedidos = 0.0
+                # Forzamos write para que haya tracking y pueda disparar avisos.
+                if bond.base_pedidos != 0.0:
+                    bond.write({"base_pedidos": 0.0})
                 continue
 
             orders = bond.contract_ids.mapped ( "sale_order_ids" ).filtered (
                 lambda
                     so : so.partner_id.id == bond.partner_id.id and so.state == "sale"
             )
-            bond.base_pedidos = sum ( orders.mapped ( "amount_untaxed" ) )
+            new_val = sum ( orders.mapped ( "amount_untaxed" ) )
+            if bond.base_pedidos != new_val:
+                bond.write({"base_pedidos": new_val})
 
     @api.depends ( "contract_ids", "partner_id" )
     def _compute_documento_origen(self) :
